@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Detalles del Grupo: {{ grupo.lugar }}{% endblock %}
+{% block content %}
+    <a href="{{ url_for('gestionar_grupos') }}">&larr; Volver a la lista de grupos</a>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>Detalles del Grupo: {{ grupo.lugar }}</h1>
+        <a href="{{ url_for('pdf_grupo', id=grupo.id) }}" target="_blank" class="button">
+            📄 Generar PDF de este Grupo
+        </a>
+    </div>
+
+    <div class="detail-grid">
+        <div class="detail-item">
+            <strong>Ciclo:</strong>
+            <span>{{ grupo.ciclo.nombre }} ({{ grupo.ciclo.anio }})</span>
+        </div>
+        <div class="detail-item">
+            <strong>Lugar de Práctica:</strong>
+            <span>{{ grupo.lugar }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>Fechas:</strong>
+            <span>{{ grupo.fecha_inicio.strftime('%d/%m/%Y') }} al {{ grupo.fecha_fin.strftime('%d/%m/%Y') }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>Modalidad:</strong>
+            <span>{{ grupo.modalidad.capitalize() }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>Supervisor:</strong>
+            <span>{{ grupo.supervisor.nombre_completo() }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>Número de Estudiantes:</strong>
+            <span>{{ grupo.estudiantes|length }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>Pago por Turno:</strong>
+            <span>Q. {{ grupo.calcular_pago_por_turno() }}</span>
+        </div>
+    </div>
+
+    <hr>
+    <h2>Listado de Estudiantes</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Carnet</th>
+                <th>Nombre Completo</th>
+                <th>Estado de Pago</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for est in grupo.estudiantes %}
+            <tr>
+                <td>{{ est.carnet }}</td>
+                <td>{{ est.nombre }}</td>
+                <td>
+                    {% if est.fecha_pago %}
+                        <span class="badge badge-success">Pagado ({{ est.fecha_pago.strftime('%d/%m/%Y') }})</span>
+                    {% else %}
+                        <span class="badge badge-warning">Pendiente</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

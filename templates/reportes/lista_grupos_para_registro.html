@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Registrar Turnos{% endblock %}
+{% block content %}
+    <h1>Registrar Turnos Supervisados</h1>
+    <p>Selecciona un grupo para ver los turnos que faltan por registrar.</p>
+    
+    <div class="reporte-grupo-card-list">
+        {% for g in grupos %}
+        <div class="card">
+            <div class="card-header">
+                <h2>{{ g.lugar }} ({{ g.modalidad }})</h2>
+            </div>
+            <div class="card-body">
+                <p><strong>Supervisor:</strong> {{ g.supervisor.nombre_completo() }}</p>
+                <p><strong>Fechas:</strong> {{ g.fecha_inicio.strftime('%d/%m/%Y') }} - {{ g.fecha_fin.strftime('%d/%m/%Y') }}</p>
+                <a href="{{ url_for('registrar_turnos_grupo', id_grupo=g.id) }}" class="button">Gestionar Turnos</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}

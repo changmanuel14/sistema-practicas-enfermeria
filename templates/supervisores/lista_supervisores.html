@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Gestión de Supervisores{% endblock %}
+{% block content %}
+    <h1>Gestión de Supervisores</h1>
+    
+    <h2>Agregar Nuevo Supervisor</h2>
+    <form method="POST">
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" name="nombre" required>
+        <label for="apellido">Apellido:</label>
+        <input type="text" id="apellido" name="apellido" required>
+        <label for="telefono">Teléfono:</label>
+        <input type="tel" id="telefono" name="telefono">
+        <label for="correo">Correo Electrónico:</label>
+        <input type="email" id="correo" name="correo">
+        <button type="submit">Agregar Supervisor</button>
+    </form>
+
+    <hr>
+    <h2>Supervisores Registrados</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre Completo</th>
+                <th>Teléfono</th>
+                <th>Correo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sup in supervisores %}
+            <tr>
+                <td>{{ sup.nombre_completo() }}</td>
+                <td>{{ sup.telefono if sup.telefono else 'N/A' }}</td>
+                <td>{{ sup.correo }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

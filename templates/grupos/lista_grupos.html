@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Gestión de Grupos de Práctica{% endblock %}
+{% block content %}
+<h1>Gestión de Grupos de Práctica</h1>
+
+<h2>Crear Nuevo Grupo</h2>
+<form method="POST" id="form-crear-grupo">
+    <div class="form-grid">
+        <label for="id_ciclo">Ciclo:</label>
+        <select id="id_ciclo" name="id_ciclo" required>
+            <option value="">-- Selecciona un Ciclo --</option>
+            {% for ciclo in ciclos %}
+            <option value="{{ ciclo.id }}">{{ ciclo.nombre }} ({{ ciclo.anio }})</option>
+            {% endfor %}
+        </select>
+
+        <label for="lugar">Lugar de Práctica:</label>
+        <input type="text" id="lugar" name="lugar" required>
+
+        <label for="fecha_inicio">Fecha de Inicio:</label>
+        <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+
+        <label for="fecha_fin">Fecha de Fin:</label>
+        <input type="date" id="fecha_fin" name="fecha_fin" required>
+
+        <label for="modalidad">Modalidad:</label>
+        <select id="modalidad" name="modalidad" required>
+            <option value="matutino">Matutino</option>
+            <option value="vespertino">Vespertino</option>
+        </select>
+
+        <label for="id_supervisor">Supervisor:</label>
+        <select id="id_supervisor" name="id_supervisor" required>
+            <option value="">-- Selecciona un Supervisor --</option>
+            {% for sup in supervisores %}
+            <option value="{{ sup.id }}">{{ sup.nombre_completo() }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <h3>Seleccionar Estudiantes (Máximo 10)</h3>
+    <!-- Contenedor para la tabla de estudiantes -->
+    <div id="estudiantes-lista-container">
+        <p>Por favor, selecciona un ciclo para ver los estudiantes disponibles.</p>
+    </div>
+
+    <p id="resumen-pago">Selecciona estudiantes y fechas para ver el cálculo del pago.</p>
+
+    <button type="submit">Crear Grupo</button>
+</form>
+
+<hr>
+<div style="text-align: right; margin-bottom: 10px;">
+    <a href="{{ url_for('pdf_grupos') }}" target="_blank" class="button">
+        📄 Ver PDF General
+    </a>
+</div>
+
+<h2>Grupos Existentes</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Lugar</th>
+            <th>Supervisor</th>
+            <th>Fechas</th>
+            <th>Modalidad</th>
+            <th>Estudiantes</th>
+            <th>Pago/turno</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for g in grupos %}
+        <tr>
+            <td>{{ g.lugar }}</td>
+            <td>{{ g.supervisor.nombre_completo() }}</td>
+            <td>{{ g.fecha_inicio.strftime('%d/%m/%Y') }} - {{ g.fecha_fin.strftime('%d/%m/%Y') }}</td>
+            <td>{{ g.modalidad.capitalize() }}</td>
+            <td>{{ g.estudiantes|length }}</td>
+            <td>Q. {{ g.calcular_pago_por_turno() }}</td>
+            <td class="actions-cell">
+                <a href="{{ url_for('ver_grupo', id=g.id) }}" class="button-action-small">Ver</a>
+                <a href="{{ url_for('editar_grupo', id=g.id) }}" class="button-action-small">Editar</a>
+                <form action="{{ url_for('eliminar_grupo', id=g.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="button-action-small button-danger"
+                        onclick="return confirm('¿Estás seguro de que quieres eliminar este grupo y todos sus reportes?');">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const cicloSelect = document.getElementById('id_ciclo');
+        const estudiantesContainer = document.getElementById('estudiantes-lista-container');
+        const fechaInicio = document.getElementById('fecha_inicio');
+        const fechaFin = document.getElementById('fecha_fin');
+        const resumenPago = document.getElementById('resumen-pago');
+
+        function updatePaymentSummary() {
+            const selectedStudents = document.querySelectorAll('#estudiantes-table-body input[name="estudiantes"]:checked').length;
+            const fInicio = new Date(fechaInicio.value);
+            const fFin = new Date(fechaFin.value);
+
+            if (selectedStudents > 0 && fInicio && fFin && fInicio <= fFin) {
+                let diasHabiles = 0;
+                const currentDate = new Date(fInicio);
+                while (currentDate <= fFin) {
+                    if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+                        diasHabiles++;
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+
+                if (diasHabiles > 0) {
+                    const pagoTotal = selectedStudents * 400;
+                    const pagoPorTurno = (pagoTotal / diasHabiles).toFixed(2);
+                    resumenPago.textContent = `Resumen: ${selectedStudents} estudiantes, ${diasHabiles} días hábiles. Pago total: Q.${pagoTotal}. Pago por turno: Q.${pagoPorTurno}`;
+                } else {
+                    resumenPago.textContent = 'Las fechas seleccionadas no incluyen días hábiles.';
+                }
+            } else {
+                resumenPago.textContent = 'Selecciona estudiantes y fechas válidas para ver el cálculo del pago.';
+            }
+        }
+
+        cicloSelect.addEventListener('change', function () {
+            const idCiclo = this.value;
+
+            if (idCiclo) {
+                fetch(`/api/estudiantes/${idCiclo}`)
+                    .then(response => response.json())
+                    .then(estudiantes => {
+                        estudiantesContainer.innerHTML = '';
+
+                        if (estudiantes.length > 0) {
+                            let tableHtml = `
+                            <div class="student-table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th><input type="checkbox" id="select-all-students"></th>
+                                            <th>Carnet</th>
+                                            <th>Nombre</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="estudiantes-table-body">
+                        `;
+                            estudiantes.forEach(est => {
+                                tableHtml += `
+                                <tr>
+                                    <td><input type="checkbox" name="estudiantes" value="${est.id}"></td>
+                                    <td>${est.carnet}</td>
+                                    <td>${est.nombre}</td>
+                                </tr>
+                            `;
+                            });
+                            tableHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                            estudiantesContainer.innerHTML = tableHtml;
+
+                            // Lógica para "Seleccionar Todos"
+                            const selectAllCheckbox = document.getElementById('select-all-students');
+                            const studentCheckboxes = document.querySelectorAll('#estudiantes-table-body input[name="estudiantes"]');
+
+                            selectAllCheckbox.addEventListener('change', function () {
+                                studentCheckboxes.forEach(cb => cb.checked = this.checked);
+                                updatePaymentSummary();
+                            });
+
+                        } else {
+                            estudiantesContainer.innerHTML = '<p>No hay estudiantes cargados para este ciclo.</p>';
+                        }
+                        updatePaymentSummary();
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar estudiantes:', error);
+                        estudiantesContainer.innerHTML = '<p>Error al cargar la lista de estudiantes.</p>';
+                    });
+            } else {
+                estudiantesContainer.innerHTML = '<p>Por favor, selecciona un ciclo para ver los estudiantes disponibles.</p>';
+                resumenPago.textContent = 'Selecciona estudiantes y fechas para ver el cálculo del pago.';
+            }
+        });
+
+        // Usamos delegación de eventos para los checkboxes de estudiantes
+        estudiantesContainer.addEventListener('change', function (e) {
+            if (e.target && e.target.matches('input[name="estudiantes"]')) {
+                updatePaymentSummary();
+            }
+        });
+
+        fechaInicio.addEventListener('change', updatePaymentSummary);
+        fechaFin.addEventListener('change', updatePaymentSummary);
+    });
+</script>
+{% endblock %}

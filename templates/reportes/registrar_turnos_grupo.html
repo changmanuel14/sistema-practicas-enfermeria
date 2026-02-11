@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Registrar Turnos de {{ grupo.lugar }}{% endblock %}
+{% block content %}
+    <a href="{{ url_for('registrar_reportes') }}">&larr; Volver a la lista de grupos</a>
+    
+    <h1>Registrar Turnos: {{ grupo.lugar }}</h1>
+    <p><strong>Supervisor:</strong> {{ grupo.supervisor.nombre_completo() }}</p>
+    <p><strong>Fechas del Grupo:</strong> {{ grupo.fecha_inicio.strftime('%d/%m/%Y') }} al {{ grupo.fecha_fin.strftime('%d/%m/%Y') }}</p>
+    
+    <hr>
+
+    <h2>Fechas sin Registrar</h2>
+    <div id="client-flash-container"></div>
+    {% if unregistered_dates %}
+        <div class="action-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha del Turno</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="unregistered-dates-tbody">
+                    {% for fecha_item in unregistered_dates %}
+                    <tr data-fecha="{{ fecha_item.date_obj.strftime('%Y-%m-%d') }}">
+                        <td>{{ fecha_item.date_str }}</td>
+                        <td class="actions-cell">
+                            <button class="button-action button-registrar" data-accion="registrar">Registrar</button>
+                            <button class="button-action button-feriado" data-accion="feriado">Feriado</button>
+                            <button class="button-action button-no-dio" data-accion="no_dio">No se dio</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>¡Todos los turnos para este grupo ya han sido procesados!</p>
+    {% endif %}
+
+    <hr>
+
+    <h2>Turnos Registrados</h2>
+    {% if reportes_existentes %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha del Turno</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <!-- AÑADIMOS UN ID AL TBODY PARA PODER MANIPULARLO -->
+            <tbody id="reportes-existentes-tbody">
+                {% for reporte_item in reportes_existentes %}
+                <tr>
+                    <td>{{ reporte_item.date_str }}</td>
+                    <td>{{ reporte_item.estado | capitalize }}</td>
+                    <td>
+                        <form action="{{ url_for('eliminar_reporte', id_reporte=reporte_item.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="button-danger" onclick="return confirm('¿Estás seguro de que quieres eliminar este turno?');">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Aún no hay turnos registrados para este grupo.</p>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function showClientFlash(message, category) {
+        const container = document.getElementById('client-flash-container');
+        const flashDiv = document.createElement('div');
+        flashDiv.className = `alert alert-${category}`;
+        flashDiv.textContent = message;
+        container.appendChild(flashDiv);
+        setTimeout(() => {
+            flashDiv.style.transition = 'opacity 0.5s';
+            flashDiv.style.opacity = '0';
+            setTimeout(() => flashDiv.remove(), 500);
+        }, 3500);
+    }
+
+    const unregisteredTbody = document.getElementById('unregistered-dates-tbody');
+    if (unregisteredTbody) {
+        unregisteredTbody.addEventListener('click', (e) => {
+            if (e.target.matches('.button-action')) {
+                const button = e.target;
+                const row = button.closest('tr');
+                const fecha = row.getAttribute('data-fecha');
+                const accion = button.getAttribute('data-accion');
+                
+                if (confirm(`¿Estás seguro de que quieres marcar este turno como '${accion.replace('_', ' ')}'?`)) {
+                    button.disabled = true;
+                    button.textContent = 'Procesando...';
+
+                    fetch(`/api/turno/{{ grupo.id }}/procesar`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fecha: fecha, accion: accion })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            showClientFlash(data.message, 'success');
+                            
+                            // 1. Eliminar la fila de "Fechas sin Registrar"
+                            row.style.transition = 'opacity 0.4s';
+                            row.style.opacity = '0';
+                            setTimeout(() => row.remove(), 400);
+
+                            // 2. Añadir la nueva fila a "Turnos Registrados"
+                            const registeredTbody = document.getElementById('reportes-existentes-tbody');
+                            const newRow = document.createElement('tr');
+                            newRow.innerHTML = `
+                                <td>${data.fecha_str}</td>
+                                <td>${data.estado.charAt(0).toUpperCase() + data.estado.slice(1)}</td>
+                                <td>
+                                    <form action="/reportes/eliminar/${data.reporte_id}" method="POST" style="display:inline;">
+                                        <button type="submit" class="button-danger" onclick="return confirm('¿Estás seguro de que quieres eliminar este turno?');">Eliminar</button>
+                                    </form>
+                                </td>
+                            `;
+                            newRow.style.opacity = '0';
+                            registeredTbody.appendChild(newRow);
+                            // Animación de fade-in
+                            setTimeout(() => newRow.style.opacity = '1', 10);
+                            
+                            // 3. Si no quedan más filas, mostrar mensaje de "todos procesados"
+                            if (unregisteredTbody.children.length === 0) {
+                                const messageDiv = document.createElement('p');
+                                messageDiv.textContent = '¡Todos los turnos para este grupo ya han sido procesados!';
+                                unregisteredTbody.parentNode.replaceChild(messageDiv, unregisteredTbody.parentNode.querySelector('.action-table-container'));
+                            }
+
+                        } else {
+                            showClientFlash(data.message || 'Error al procesar.', 'danger');
+                            button.disabled = false;
+                            button.textContent = accion.replace('_', ' ').capitalize();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showClientFlash('Error de comunicación con el servidor.', 'danger');
+                        button.disabled = false;
+                        button.textContent = accion.replace('_', ' ').capitalize();
+                    });
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

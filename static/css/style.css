@@ -1,0 +1,523 @@
+:root {
+    --primary-color: #0056b3;
+    --secondary-color: #f4f4f4;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --text-color: #333;
+    --light-text: #fff;
+    --border-color: #ddd;
+    --container-width: 1200px;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    color: var(--text-color);
+    background-color: #f9f9f9;
+}
+
+.container {
+    width: 90%;
+    max-width: var(--container-width);
+    margin: 20px auto;
+    padding: 20px;
+    background: var(--light-text);
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Navbar (Estilos base y responsive) --- */
+.navbar {
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    padding: 0.5rem 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    margin: 0 auto;
+    width: calc(90% - 40px);
+    max-width: calc(var(--container-width) - 40px);
+}
+
+.nav-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--light-text);
+    text-decoration: none;
+}
+
+.nav-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    background-color: var(--primary-color);
+}
+
+.nav-menu li {
+    margin-left: 20px;
+}
+
+.nav-menu a {
+    color: var(--light-text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    padding: 0.5rem 0;
+}
+
+.nav-menu a:hover {
+    color: #cce5ff;
+}
+
+/* --- Estilos para el Menú de Hamburguesa --- */
+.nav-toggle {
+    display: none;
+    /* Oculto por defecto en pantallas grandes */
+    background: none;
+    border: none;
+    color: var(--light-text);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.hamburger {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background-color: var(--light-text);
+    position: relative;
+}
+
+.hamburger::before,
+.hamburger::after {
+    content: '';
+    width: 25px;
+    height: 3px;
+    background-color: var(--light-text);
+    position: absolute;
+    left: 0;
+    transition: all 0.3s ease;
+}
+
+.hamburger::before {
+    transform: translateY(-8px);
+}
+
+.hamburger::after {
+    transform: translateY(8px);
+}
+
+
+/* --- Media Query para Dispositivos Móviles --- */
+/* Estos estilos se aplican solo si el ancho de la pantalla es de 768px o menos */
+@media (max-width: 768px) {
+    .nav-toggle {
+        display: block;
+        /* Muestra el botón de hamburguesa */
+    }
+
+    .nav-menu {
+        position: absolute;
+        top: 100%;
+        /* Lo coloca justo debajo del navbar */
+        left: 0;
+        width: 100%;
+        background-color: var(--primary-color);
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem 0;
+        max-height: 0;
+        /* Lo oculta por defecto */
+        overflow: hidden;
+        transition: max-height 0.3s ease-in-out;
+    }
+
+    /* Esta clase la añade el JavaScript para mostrar el menú */
+    .nav-menu.nav-menu_visible {
+        max-height: 500px;
+        /* Un valor lo suficientemente grande para mostrar todos los items */
+    }
+
+    .nav-menu li {
+        margin: 0;
+        width: 100%;
+    }
+
+    .nav-menu a {
+        display: block;
+        width: 100%;
+        padding: 1rem 2rem;
+    }
+
+    .nav-menu a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+
+/* --- El resto de los estilos permanecen igual --- */
+
+/* Forms */
+form {
+    margin-bottom: 2rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="tel"],
+input[type="email"],
+input[type="date"],
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+button {
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #004494;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th,
+td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    background-color: var(--secondary-color);
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Alerts */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-info {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+/* Badges */
+.badge {
+    padding: 4px 8px;
+    font-size: 0.8em;
+    border-radius: 12px;
+    color: var(--light-text);
+}
+
+.badge-success {
+    background-color: var(--success-color);
+}
+
+.badge-warning {
+    background-color: var(--warning-color);
+    color: var(--text-color);
+}
+
+/* Other elements */
+h1,
+h2 {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--secondary-color);
+    padding-bottom: 10px;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+#estudiantes-lista {
+    max-height: 200px;
+    overflow-y: scroll;
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    margin-bottom: 1rem;
+}
+
+.checkbox-item {
+    margin-bottom: 5px;
+}
+
+.checkbox-item label {
+    font-weight: normal;
+}
+
+#resumen-pago {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 20px;
+    background-color: #333;
+    color: var(--light-text);
+}
+
+.reporte-supervisor {
+    margin-bottom: 2rem;
+}
+
+/* --- Estilos para las nuevas páginas de reportes --- */
+.reporte-grupo-card-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    padding: 15px;
+}
+
+.card-header h2 {
+    margin: 0;
+    border: none;
+    padding: 0;
+    font-size: 1.2rem;
+}
+
+.card-body {
+    padding: 15px;
+}
+
+.card-body p {
+    margin: 5px 0;
+}
+
+.button {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    padding: 10px 15px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.button:hover {
+    background-color: #004494;
+    text-decoration: none;
+    color: var(--light-text);
+}
+
+.button-danger {
+    background-color: var(--danger-color);
+}
+
+.button-danger:hover {
+    background-color: #c82333;
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* --- Estilos para la tabla de estudiantes scrolleable --- */
+.student-table-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.student-table-container table {
+    margin: 0;
+    border: none;
+    box-shadow: none;
+}
+
+.student-table-container thead th {
+    position: sticky;
+    top: 0;
+    background-color: var(--secondary-color);
+    z-index: 10;
+}
+
+/* --- Estilos para la tabla de acciones de turnos --- */
+.action-table-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.actions-cell {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.button-action {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    color: var(--light-text);
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: background-color 0.3s ease;
+}
+
+.button-registrar {
+    background-color: var(--success-color);
+}
+
+.button-registrar:hover {
+    background-color: #218838;
+}
+
+.button-feriado {
+    background-color: var(--warning-color);
+    color: var(--text-color);
+}
+
+.button-feriado:hover {
+    background-color: #e0a800;
+}
+
+.button-no-dio {
+    background-color: #6c757d;
+}
+
+.button-no-dio:hover {
+    background-color: #5a6268;
+}
+
+/* --- Estilos para la página de detalles de grupo --- */
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+    background-color: var(--secondary-color);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+.detail-item strong {
+    color: var(--primary-color);
+}
+
+.actions-cell {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.button-action-small {
+    padding: 5px 10px;
+    font-size: 0.8em;
+    text-decoration: none;
+    border-radius: 4px;
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    border: none;
+    cursor: pointer;
+    display: inline-block;
+    text-align: center;
+}
+
+.button-action-small:hover {
+    background-color: #004494;
+    text-decoration: none;
+    color: var(--light-text);
+}

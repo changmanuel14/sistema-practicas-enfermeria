@@ -1,0 +1,4 @@
+/venv
+conexion.py
+/migrations
+__pycache__

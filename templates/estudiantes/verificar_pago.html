@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Verificar Pago de Estudiante{% endblock %}
+{% block content %}
+    <h1>Registrar Pago de Práctica</h1>
+    <p><strong>Estudiante:</strong> {{ estudiante.nombre }} ({{ estudiante.carnet }})</p>
+    
+    <form method="POST">
+        <label for="fecha_pago">Fecha de Pago:</label>
+        <input type="date" id="fecha_pago" name="fecha_pago" required>
+        <button type="submit">Guardar Pago</button>
+    </form>
+    <br>
+    <a href="{{ url_for('gestionar_estudiantes', id_ciclo=estudiante.id_ciclo) }}">&larr; Volver al listado</a>
+{% endblock %}

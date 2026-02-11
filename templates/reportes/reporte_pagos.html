@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Reporte de Montos a Pagar{% endblock %}
+{% block content %}
+    <!-- Contenedor para mensajes de cliente (flash messages sin recarga) -->
+    <div id="client-flash-container"></div>
+
+    <h1>Reporte de Montos a Pagar (Pendientes)</h1>
+    
+    {% if datos_reporte %}
+        {% for data in datos_reporte %}
+        <div class="reporte-supervisor" data-supervisor-id="{{ data.supervisor | replace(' ', '-') }}">
+            <h2>{{ data.supervisor }}</h2>
+            {% for pago in data.pagos %}
+            <div class="pago-mes-container" data-mes="{{ pago.mes }}">
+                <h3>{{ pago.mes }}</h3>
+                <button class="toggle-detalles" data-target="detalles-{{ data.supervisor | replace(' ', '-') }}-{{ pago.mes }}">
+                    Ver y Gestionar Turnos
+                </button>
+                
+                <div id="detalles-{{ data.supervisor | replace(' ', '-') }}-{{ pago.mes }}" class="detalles-turnos" style="display: none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha del Turno</th>
+                                <th>Lugar / Modalidad</th>
+                                <th>Pago por Turno</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reporte in pago.reportes %}
+                            <tr data-reporte-id="{{ reporte.id }}" data-pago-valor="{{ reporte.grupo.calcular_pago_por_turno() }}">
+                                <td>{{ reporte.fecha_turno.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ reporte.grupo.lugar }} ({{ reporte.grupo.modalidad }})</td>
+                                <td class="pago-valor">Q. {{ reporte.grupo.calcular_pago_por_turno() }}</td>
+                                <td>
+                                    <button class="button-pagar" data-reporte-id="{{ reporte.id }}">Marcar como Pagado</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+            <h3 class="total-general">Total General a Pagar: <span>Q. {{ "%.2f"|format(data.total_general) }}</span></h3>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No hay turnos pendientes de pago.</p>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Función para mostrar mensajes de cliente
+    function showClientFlash(message, category) {
+        const container = document.getElementById('client-flash-container');
+        const flashDiv = document.createElement('div');
+        flashDiv.className = `alert alert-${category}`;
+        flashDiv.textContent = message;
+        container.appendChild(flashDiv);
+
+        // Animación de fade-out y eliminación después de 4 segundos
+        setTimeout(() => {
+            flashDiv.style.transition = 'opacity 0.5s';
+            flashDiv.style.opacity = '0';
+            setTimeout(() => flashDiv.remove(), 500);
+        }, 3500);
+    }
+
+    // Lógica para mostrar/ocultar los detalles de los turnos
+    const toggleButtons = document.querySelectorAll('.toggle-detalles');
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetId = button.getAttribute('data-target');
+            const detallesDiv = document.getElementById(targetId);
+            if (detallesDiv) {
+                detallesDiv.style.display = detallesDiv.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+    });
+
+    // Lógica para marcar un turno como pagado
+    const pagarButtons = document.querySelectorAll('.button-pagar');
+    pagarButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const reporteId = button.getAttribute('data-reporte-id');
+            const row = button.closest('tr');
+            const pagoValor = parseFloat(row.getAttribute('data-pago-valor'));
+
+            if (confirm('¿Estás seguro de que quieres marcar este turno como pagado?')) {
+                button.disabled = true; // Deshabilitar botón para evitar doble clic
+                button.textContent = 'Procesando...';
+
+                fetch(`/api/reporte/${reporteId}/marcar_pagado`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showClientFlash(data.message, 'success');
+                        
+                        // Animación para eliminar la fila
+                        row.style.transition = 'opacity 0.4s';
+                        row.style.opacity = '0';
+                        
+                        setTimeout(() => {
+                            row.remove();
+                            // Actualizar el total general
+                            const totalGeneralSpan = row.closest('.reporte-supervisor').querySelector('.total-general span');
+                            const totalActual = parseFloat(totalGeneralSpan.textContent.replace('Q. ', ''));
+                            const nuevoTotal = totalActual - pagoValor;
+                            totalGeneralSpan.textContent = `Q. ${nuevoTotal.toFixed(2)}`;
+
+                            // Si no quedan más filas, ocultar el contenedor del mes
+                            const tbody = row.closest('tbody');
+                            if (tbody.children.length === 0) {
+                                const mesContainer = tbody.closest('.pago-mes-container');
+                                mesContainer.style.transition = 'opacity 0.4s';
+                                mesContainer.style.opacity = '0';
+                                setTimeout(() => mesContainer.remove(), 400);
+                            }
+                        }, 400);
+
+                    } else {
+                        showClientFlash(data.message || 'Error al marcar el pago.', 'danger');
+                        button.disabled = false;
+                        button.textContent = 'Marcar como Pagado';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showClientFlash('Error de comunicación con el servidor.', 'danger');
+                    button.disabled = false;
+                    button.textContent = 'Marcar como Pagado';
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Registrar Reportes de Turnos{% endblock %}
+{% block content %}
+    <h1>Registrar Turnos Supervisados</h1>
+    <p>Selecciona la fecha y marca los grupos que supervisaron en ese día.</p>
+    
+    <form method="POST">
+        <label for="fecha_turno">Fecha del Turno:</label>
+        <input type="date" id="fecha_turno" name="fecha_turno" required>
+        
+        <h3>Grupos de Práctica</h3>
+        {% for g in grupos %}
+        <div class="checkbox-item">
+            <input type="checkbox" name="grupos_reportados" value="{{ g.id }}" id="grp_{{ g.id }}">
+            <label for="grp_{{ g.id }}">
+                <strong>{{ g.lugar }} ({{ g.modalidad }})</strong> - 
+                Supervisor: {{ g.supervisor.nombre_completo() }}
+            </label>
+        </div>
+        {% endfor %}
+
+        <button type="submit">Registrar Turnos</button>
+    </form>
+{% endblock %}

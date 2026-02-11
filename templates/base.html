@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Prácticas de Enfermería{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a class="nav-brand" href="{{ url_for('index') }}">Sistema Prácticas Enfermería</a>
+            
+            <!-- Botón de hamburguesa para móviles -->
+            <button class="nav-toggle" aria-label="Abrir menú">
+                <span class="hamburger"></span>
+            </button>
+
+            <!-- Menú de navegación -->
+            <ul class="nav-menu">
+                <li><a href="{{ url_for('gestionar_ciclos') }}">Ciclos</a></li>
+                <li><a href="{{ url_for('gestionar_grupos') }}">Grupos</a></li>
+                <li><a href="{{ url_for('gestionar_supervisores') }}">Supervisores</a></li>
+                <li><a href="{{ url_for('registrar_reportes') }}">Registrar Turnos</a></li>
+                <li><a href="{{ url_for('reporte_pagos') }}">Reporte de Pagos</a></li>
+                <li><a href="{{ url_for('historial_pagos') }}">Historial de Pagos</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+        {% block scripts %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2026 - Sistema de Control de Prácticas</p>
+    </footer>
+
+    <!-- Script para el menú de hamburguesa -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navToggle = document.querySelector('.nav-toggle');
+            const navMenu = document.querySelector('.nav-menu');
+
+            navToggle.addEventListener('click', () => {
+                navMenu.classList.toggle('nav-menu_visible');
+            });
+        });
+    </script>
+</body>
+</html>

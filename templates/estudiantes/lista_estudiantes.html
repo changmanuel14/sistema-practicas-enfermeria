@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Estudiantes del Ciclo {{ ciclo.nombre }}{% endblock %}
+{% block content %}
+    <h1>Estudiantes del Ciclo: {{ ciclo.nombre }}</h1>
+    <a href="{{ url_for('gestionar_ciclos') }}">&larr; Volver a Ciclos</a>
+    
+    <h2>Cargar Estudiantes desde Excel</h2>
+    <p>Sube un archivo .xlsx. La primera fila debe ser de encabezado. Columna A: Carnet, Columna B: Nombre.</p>
+    <form method="POST" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".xlsx" required>
+        <button type="submit">Cargar Estudiantes</button>
+    </form>
+
+    <hr>
+    <h2>Listado de Estudiantes</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Carnet</th>
+                <th>Nombre Completo</th>
+                <th>Estado de Pago</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for est in estudiantes %}
+            <tr>
+                <td>{{ est.carnet }}</td>
+                <td>{{ est.nombre }}</td>
+                <td>
+                    {% if est.fecha_pago %}
+                        <span class="badge badge-success">Pagado ({{ est.fecha_pago.strftime('%d/%m/%Y') }})</span>
+                    {% else %}
+                        <span class="badge badge-warning">Pendiente</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('verificar_pago', id_estudiante=est.id) }}">Registrar Pago</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">No hay estudiantes cargados para este ciclo.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

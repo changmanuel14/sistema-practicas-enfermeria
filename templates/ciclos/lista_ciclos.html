@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Gestión de Ciclos{% endblock %}
+{% block content %}
+    <h1>Gestión de Ciclos</h1>
+    
+    <h2>Crear Nuevo Ciclo</h2>
+    <form method="POST">
+        <label for="nombre">Nombre del Ciclo:</label>
+        <input type="text" id="nombre" name="nombre" required>
+        <label for="anio">Año:</label>
+        <input type="number" id="anio" name="anio" required>
+        <label for="fecha_inicio">Fecha de Inicio:</label>
+        <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+        <label for="fecha_fin">Fecha de Fin:</label>
+        <input type="date" id="fecha_fin" name="fecha_fin" required>
+        <button type="submit">Crear Ciclo</button>
+    </form>
+
+    <hr>
+    <h2>Ciclos Existentes</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Año</th>
+                <th>Fecha de Inicio</th>
+                <th>Fecha de Fin</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ciclo in ciclos %}
+            <tr>
+                <td>{{ ciclo.nombre }}</td>
+                <td>{{ ciclo.anio }}</td>
+                <td>{{ ciclo.fecha_inicio.strftime('%d/%m/%Y') }}</td>
+                <td>{{ ciclo.fecha_fin.strftime('%d/%m/%Y') }}</td>
+                <td>
+                    <a href="{{ url_for('gestionar_estudiantes', id_ciclo=ciclo.id) }}">Ver Estudiantes</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

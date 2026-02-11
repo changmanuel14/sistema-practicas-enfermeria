@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Editar Grupo{% endblock %}
+{% block content %}
+    <h1>Editar Grupo de Práctica</h1>
+    <a href="{{ url_for('gestionar_grupos') }}">&larr; Volver a la lista de grupos</a>
+
+    <form method="POST" id="form-editar-grupo">
+        <div class="form-grid">
+            <label for="id_ciclo">Ciclo:</label>
+            <select id="id_ciclo" name="id_ciclo" required>
+                <option value="">-- Selecciona un Ciclo --</option>
+                {% for ciclo in ciclos %}
+                <option value="{{ ciclo.id }}" {% if ciclo.id == grupo.id_ciclo %}selected{% endif %}>{{ ciclo.nombre }} ({{ ciclo.anio }})</option>
+                {% endfor %}
+            </select>
+
+            <label for="lugar">Lugar de Práctica:</label>
+            <input type="text" id="lugar" name="lugar" value="{{ grupo.lugar }}" required>
+
+            <label for="fecha_inicio">Fecha de Inicio:</label>
+            <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ grupo.fecha_inicio.strftime('%Y-%m-%d') }}" required>
+
+            <label for="fecha_fin">Fecha de Fin:</label>
+            <input type="date" id="fecha_fin" name="fecha_fin" value="{{ grupo.fecha_fin.strftime('%Y-%m-%d') }}" required>
+            
+            <label for="modalidad">Modalidad:</label>
+            <select id="modalidad" name="modalidad" required>
+                <option value="matutino" {% if grupo.modalidad == 'matutino' %}selected{% endif %}>Matutino</option>
+                <option value="vespertino" {% if grupo.modalidad == 'vespertino' %}selected{% endif %}>Vespertino</option>
+            </select>
+
+            <label for="id_supervisor">Supervisor:</label>
+            <select id="id_supervisor" name="id_supervisor" required>
+                {% for sup in supervisores %}
+                <option value="{{ sup.id }}" {% if sup.id == grupo.id_supervisor %}selected{% endif %}>{{ sup.nombre_completo() }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <h3>Seleccionar Estudiantes (Máximo 10)</h3>
+        <div id="estudiantes-lista-container">
+            <!-- Se llenará con JS al cargar la página -->
+        </div>
+        
+        <button type="submit">Guardar Cambios</button>
+    </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cicloSelect = document.getElementById('id_ciclo');
+    const estudiantesContainer = document.getElementById('estudiantes-lista-container');
+
+    // IDs de los estudiantes ya asignados a este grupo
+    const estudiantesAsignadosIds = {{ grupo.estudiantes | map(attribute='id') | list | tojson }};
+
+    function cargarEstudiantes(idCiclo) {
+        if (idCiclo) {
+            fetch(`/api/estudiantes/${idCiclo}`)
+                .then(response => response.json())
+                .then(estudiantes => {
+                    estudiantesContainer.innerHTML = '';
+                    
+                    if (estudiantes.length > 0) {
+                        let tableHtml = `
+                            <div class="student-table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th><input type="checkbox" id="select-all-students"></th>
+                                            <th>Carnet</th>
+                                            <th>Nombre</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="estudiantes-table-body">
+                        `;
+                        estudiantes.forEach(est => {
+                            const isChecked = estudiantesAsignadosIds.includes(est.id) ? 'checked' : '';
+                            tableHtml += `
+                                <tr>
+                                    <td><input type="checkbox" name="estudiantes" value="${est.id}" ${isChecked}></td>
+                                    <td>${est.carnet}</td>
+                                    <td>${est.nombre}</td>
+                                </tr>
+                            `;
+                        });
+                        tableHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                        estudiantesContainer.innerHTML = tableHtml;
+                        
+                        // Lógica para "Seleccionar Todos"
+                        const selectAllCheckbox = document.getElementById('select-all-students');
+                        const studentCheckboxes = document.querySelectorAll('#estudiantes-table-body input[name="estudiantes"]');
+                        
+                        selectAllCheckbox.addEventListener('change', function() {
+                            studentCheckboxes.forEach(cb => cb.checked = this.checked);
+                        });
+
+                    } else {
+                        estudiantesContainer.innerHTML = '<p>No hay estudiantes cargados para este ciclo.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar estudiantes:', error);
+                    estudiantesContainer.innerHTML = '<p>Error al cargar la lista de estudiantes.</p>';
+                });
+        } else {
+            estudiantesContainer.innerHTML = '<p>Por favor, selecciona un ciclo.</p>';
+        }
+    }
+
+    // Cargar los estudiantes del ciclo actual al inicio
+    cargarEstudiantes(cicloSelect.value);
+
+    // Recargar si el ciclo cambia
+    cicloSelect.addEventListener('change', function() {
+        cargarEstudiantes(this.value);
+    });
+});
+</script>
+{% endblock %}
