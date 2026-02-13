@@ -48,9 +48,9 @@ def generar_pdf_grupos(grupos, titulo="Reporte de Grupos"):
 
         # Listado de estudiantes
         story.append(Paragraph("Estudiantes Asignados:", styles['Heading2']))
-        data_estudiantes = [['Carnet', 'Nombre Completo']]
+        data_estudiantes = [['Carnet', 'Nombre', 'Semestre', 'Sección']]
         for est in grupo.estudiantes:
-            data_estudiantes.append([est.carnet, est.nombre])
+            data_estudiantes.append([est.carnet, est.nombre, est.semestre, est.seccion])
         
         tabla_estudiantes = Table(data_estudiantes, hAlign='LEFT')
         tabla_estudiantes.setStyle(TableStyle([
@@ -136,12 +136,12 @@ def register_routes(app):
     @app.route('/ciclo/<int:id_ciclo>/estudiantes', methods=['GET', 'POST'])
     def gestionar_estudiantes(id_ciclo):
         ciclo = Ciclo.query.get_or_404(id_ciclo)
-
+        
         if request.method == 'POST':
             if 'file' not in request.files:
                 flash('No se seleccionó ningún archivo.', 'warning')
                 return redirect(request.url)
-
+            
             file = request.files['file']
             if file.filename == '':
                 flash('No se seleccionó ningún archivo.', 'warning')
@@ -149,39 +149,41 @@ def register_routes(app):
 
             if file and file.filename.endswith('.xlsx'):
                 try:
-                    df = pd.read_excel(file, skiprows=1, header=None, names=['carnet', 'nombre'])
+                    # CAMBIO: Leer columnas C y D. El índice empieza en 0.
+                    # C=2, D=3. A y B son 0 y 1.
+                    df = pd.read_excel(file, skiprows=1, header=None, names=['carnet', 'nombre', 'semestre', 'seccion'])
                     df.dropna(inplace=True)
-
+                    
                     nuevos_estudiantes = []
                     for index, row in df.iterrows():
-                        existe = Estudiante.query.filter_by(
-                            carnet=row['carnet'], id_ciclo=id_ciclo).first()
+                        existe = Estudiante.query.filter_by(carnet=row['carnet'], id_ciclo=id_ciclo).first()
                         if not existe:
                             nuevos_estudiantes.append(
-                                Estudiante(carnet=str(
-                                    row['carnet']), nombre=row['nombre'], id_ciclo=id_ciclo)
+                                Estudiante(
+                                    carnet=str(row['carnet']), 
+                                    nombre=row['nombre'], 
+                                    semestre=str(row['semestre']),
+                                    seccion=str(row['seccion']),
+                                    id_ciclo=id_ciclo
+                                )
                             )
-
+                    
                     if nuevos_estudiantes:
                         db.session.add_all(nuevos_estudiantes)
                         db.session.commit()
-                        flash(
-                            f'Se cargaron {len(nuevos_estudiantes)} estudiantes nuevos.', 'success')
+                        flash(f'Se cargaron {len(nuevos_estudiantes)} estudiantes nuevos.', 'success')
                     else:
-                        flash(
-                            'Todos los estudiantes del archivo ya existen en este ciclo.', 'info')
+                        flash('Todos los estudiantes del archivo ya existen en este ciclo.', 'info')
 
                 except Exception as e:
                     db.session.rollback()
                     flash(f'Error al procesar el archivo: {e}', 'danger')
             else:
-                flash(
-                    'Formato de archivo no válido. Por favor, sube un archivo .xlsx', 'danger')
-
+                flash('Formato de archivo no válido. Por favor, sube un archivo .xlsx', 'danger')
+            
             return redirect(url_for('gestionar_estudiantes', id_ciclo=id_ciclo))
 
-        estudiantes = Estudiante.query.filter_by(
-            id_ciclo=id_ciclo).order_by(Estudiante.nombre).all()
+        estudiantes = Estudiante.query.filter_by(id_ciclo=id_ciclo).order_by(Estudiante.nombre).all()
         return render_template('estudiantes/lista_estudiantes.html', ciclo=ciclo, estudiantes=estudiantes)
 
     # --- Módulo 3: Verificación de Pago ---
@@ -223,10 +225,6 @@ def register_routes(app):
         supervisores = Supervisor.query.order_by(Supervisor.apellido).all()
         return render_template('supervisores/lista_supervisores.html', supervisores=supervisores)
 
-    # --- Módulo 5, 8, 9: Crear, Editar y Eliminar Grupos ---
-    # ... (dentro de la función register_routes en app.py)
-
-    # --- Módulo 5, 8, 9: Crear, Editar y Eliminar Grupos ---
     @app.route('/grupos', methods=['GET', 'POST'])
     def gestionar_grupos():
         if request.method == 'POST':
@@ -288,7 +286,6 @@ def register_routes(app):
             
             return redirect(url_for('gestionar_grupos'))
 
-        # --- NUEVA LÓGICA PARA GET ---
         all_grupos = Grupo.query.all()
         grupos_activos = []
         hoy = datetime.date.today()
@@ -342,17 +339,16 @@ def register_routes(app):
                 flash('El grupo debe tener entre 1 y 10 estudiantes.', 'danger')
                 return redirect(url_for('editar_grupo', id=id))
             
-            # --- LÓGICA CORREGIDA PARA SUPERVISOR ---
             # Excluimos el grupo actual de la búsqueda y comprobamos la modalidad
             grupos_conflicto = Grupo.query.filter(
                 Grupo.id != id,  # <-- Excluir el grupo actual
                 Grupo.id_supervisor == grupo.id_supervisor,
-                Grupo.modalidad == modalidad, # <-- AÑADIMOS ESTA LÍNEA
+                Grupo.modalidad == modalidad,
                 Grupo.fecha_inicio <= grupo.fecha_fin,
                 Grupo.fecha_fin >= grupo.fecha_inicio
             ).count()
 
-            if grupos_conflicto >= 1: # <-- CAMBIAMOS A >= 1
+            if grupos_conflicto >= 1: 
                 flash(f'El supervisor ya tiene un grupo asignado en la misma jornada ({modalidad}) en estas fechas.', 'danger')
                 return redirect(url_for('editar_grupo', id=id))
 
@@ -360,7 +356,7 @@ def register_routes(app):
             estudiantes_obj = Estudiante.query.filter(Estudiante.id.in_(estudiantes_seleccionados_ids)).all()
             for estudiante in estudiantes_obj:
                 grupos_del_estudiante = Grupo.query.filter(
-                    Grupo.id != id, # Excluir el grupo actual
+                    Grupo.id != id,
                     Grupo.estudiantes.any(id=estudiante.id),
                     Grupo.fecha_inicio <= grupo.fecha_fin,
                     Grupo.fecha_fin >= grupo.fecha_inicio
@@ -491,24 +487,21 @@ def register_routes(app):
         datos_reporte = []
         
         for sup in supervisores:
-            # CAMBIO CLAVE: Solo buscar reportes NO PAGADOS
-            reportes_pendientes = Reporte.query.filter_by(id_supervisor=sup.id, pagado=False).order_by(Reporte.fecha_turno).all()
-            
+            reportes_pagados = Reporte.query.filter_by(id_supervisor=sup.id, pagado=True).order_by(Reporte.fecha_turno).all()
             pagos_mensuales = {}
             total_general = 0
             
-            for reporte in reportes_pendientes:
+            for reporte in reportes_pagados:
                 anio_mes = reporte.fecha_turno.strftime('%Y-%m')
                 if anio_mes not in pagos_mensuales:
                     pagos_mensuales[anio_mes] = {'mes': anio_mes, 'cantidad_turnos': 0, 'total_pago': 0, 'reportes': []}
-                
-                pago_turno = reporte.grupo.calcular_pago_por_turno()
+
+                pago_turno = float(reporte.pago_turno_fijado) if reporte.pago_turno_fijado else 0.0
                 
                 pagos_mensuales[anio_mes]['cantidad_turnos'] += 1
                 pagos_mensuales[anio_mes]['total_pago'] += pago_turno
                 total_general += pago_turno
                 
-                # Añadimos el objeto reporte completo para poder mostrarlo en la tabla
                 pagos_mensuales[anio_mes]['reportes'].append(reporte)
             
             if pagos_mensuales:
@@ -555,13 +548,15 @@ def register_routes(app):
             return jsonify({"status": "error", "message": "Este turno ya estaba marcado como pagado."}), 400
         
         try:
+            pago_actual = reporte.grupo.calcular_pago_por_turno()
+            reporte.pago_turno_fijado = pago_actual
+            
             reporte.pagado = True
             db.session.commit()
             return jsonify({"status": "success", "message": "Turno marcado como pagado correctamente."})
         except Exception as e:
             db.session.rollback()
             return jsonify({"status": "error", "message": f"Error al marcar el turno: {e}"}), 500
-    # ... (dentro de la función register_routes en app.py)
 
     @app.route('/api/turno/<int:id_grupo>/procesar', methods=['POST'])
     def procesar_accion_turno(id_grupo):

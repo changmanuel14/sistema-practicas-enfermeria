@@ -48,6 +48,8 @@
             <tr>
                 <th>Carnet</th>
                 <th>Nombre Completo</th>
+                <th>Semestre</th>
+                <th>Sección</th>
                 <th>Estado de Pago</th>
             </tr>
         </thead>
@@ -56,6 +58,8 @@
             <tr>
                 <td>{{ est.carnet }}</td>
                 <td>{{ est.nombre }}</td>
+                <td>{{ est.semestre }}</td>
+                <td>{{ est.seccion }}</td>
                 <td>
                     {% if est.fecha_pago %}
                         <span class="badge badge-success">Pagado ({{ est.fecha_pago.strftime('%d/%m/%Y') }})</span>

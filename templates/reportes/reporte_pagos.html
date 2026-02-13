@@ -23,16 +23,16 @@
                             <tr>
                                 <th>Fecha del Turno</th>
                                 <th>Lugar / Modalidad</th>
-                                <th>Pago por Turno</th>
+                                <th>Pago por Turno (Fijado)</th>
                                 <th>Acción</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for reporte in pago.reportes %}
-                            <tr data-reporte-id="{{ reporte.id }}" data-pago-valor="{{ reporte.grupo.calcular_pago_por_turno() }}">
+                            <tr data-reporte-id="{{ reporte.id }}" data-pago-valor="{{ reporte.pago_turno_fijado }}">
                                 <td>{{ reporte.fecha_turno.strftime('%d/%m/%Y') }}</td>
                                 <td>{{ reporte.grupo.lugar }} ({{ reporte.grupo.modalidad }})</td>
-                                <td class="pago-valor">Q. {{ reporte.grupo.calcular_pago_por_turno() }}</td>
+                                <td class="pago-valor">Q. {{ "%.2f"|format(reporte.pago_turno_fijado) }}</td>
                                 <td>
                                     <button class="button-pagar" data-reporte-id="{{ reporte.id }}">Marcar como Pagado</button>
                                 </td>

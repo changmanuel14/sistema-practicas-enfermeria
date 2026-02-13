@@ -20,15 +20,15 @@
                             <tr>
                                 <th>Fecha del Turno</th>
                                 <th>Lugar / Modalidad</th>
-                                <th>Pago por Turno</th>
+                                <th>Pago por Turno (Fijado)</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for reporte in ciclo_data.reportes %}
+                            {% for reporte in data.reportes %}
                             <tr>
                                 <td>{{ reporte.fecha_turno.strftime('%d/%m/%Y') }}</td>
                                 <td>{{ reporte.grupo.lugar }} ({{ reporte.grupo.modalidad }})</td>
-                                <td>Q. {{ reporte.grupo.calcular_pago_por_turno() }}</td>
+                                <td>Q. {{ "%.2f"|format(reporte.pago_turno_fijado) }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

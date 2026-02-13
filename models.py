@@ -23,6 +23,8 @@ class Estudiante(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     carnet = db.Column(db.String(20), nullable=False)
     nombre = db.Column(db.String(150), nullable=False)
+    semestre = db.Column(db.String(20), nullable=False)
+    seccion = db.Column(db.String(10), nullable=False)
     fecha_pago = db.Column(db.Date, nullable=True)
     id_ciclo = db.Column(db.Integer, db.ForeignKey('ciclo.id'), nullable=False)
 
@@ -82,8 +84,9 @@ class Reporte(db.Model):
     id_grupo = db.Column(db.Integer, db.ForeignKey('grupo.id'), nullable=False)
     id_supervisor = db.Column(db.Integer, db.ForeignKey('supervisor.id'), nullable=False)
     fecha_turno = db.Column(db.Date, nullable=False, default=datetime.date.today)
-    estado = db.Column(db.String(20), default='realizado') # 'realizado', 'ausente', 'justificado'
+    estado = db.Column(db.String(20), default='realizado')
     pagado = db.Column(db.Boolean, default=False, nullable=False)
+    pago_turno_fijado = db.Column(db.Numeric(10, 2), nullable=True) # Usar Numeric para dinero
     supervisor = db.relationship('Supervisor', backref='reportes')
 
     def __repr__(self):
