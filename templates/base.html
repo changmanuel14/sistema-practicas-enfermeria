@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Sistema de Prácticas de Enfermería{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body>
     <nav class="navbar">
         <div class="container">
             <a class="nav-brand" href="{{ url_for('index') }}">Sistema Prácticas Enfermería</a>
-            
+
             <!-- Botón de hamburguesa para móviles -->
             <button class="nav-toggle" aria-label="Abrir menú">
                 <span class="hamburger"></span>
@@ -30,15 +32,38 @@
 
     <main class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
         {% endwith %}
-        
+
         {% block content %}{% endblock %}
         {% block scripts %}{% endblock %}
+        <!-- Estructura del Modal para cambiar el estado -->
+        <!-- Debe estar fuera del bloque 'content' pero dentro del bloque 'body' -->
+        <div id="estadoModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span class="close" onclick="cerrarModalEstado()">&times;</span>
+                    <h2>Actualizar Estado Académico</h2>
+                </div>
+                <div class="modal-body">
+                    <form id="form-estado">
+                        <input type="hidden" id="estudiante-id-hidden">
+                        <label for="nuevo-estado-select">Nuevo Estado:</label>
+                        <select id="nuevo-estado-select" name="estado" required>
+                            <option value="Aprobado">Aprobado</option>
+                            <option value="Reprobó curso">Reprobó curso</option>
+                            <option value="Pendiente de evaluación">Pendiente de evaluación</option>
+                        </select>
+                        <br><br>
+                        <button type="submit">Guardar Cambios</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </main>
 
     <footer>
@@ -47,7 +72,7 @@
 
     <!-- Script para el menú de hamburguesa -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const navToggle = document.querySelector('.nav-toggle');
             const navMenu = document.querySelector('.nav-menu');
 
@@ -57,4 +82,5 @@
         });
     </script>
 </body>
+
 </html>

@@ -25,6 +25,7 @@ class Estudiante(db.Model):
     nombre = db.Column(db.String(150), nullable=False)
     semestre = db.Column(db.String(20), nullable=False)
     seccion = db.Column(db.String(10), nullable=False)
+    estado_academico = db.Column(db.String(50), nullable=False, default='Pendiente de evaluación')
     fecha_pago = db.Column(db.Date, nullable=True)
     id_ciclo = db.Column(db.Integer, db.ForeignKey('ciclo.id'), nullable=False)
 

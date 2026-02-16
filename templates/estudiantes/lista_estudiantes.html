@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Estudiantes del Ciclo {{ ciclo.nombre }}{% endblock %}
 {% block content %}
-    <h1>Estudiantes del Ciclo: {{ ciclo.nombre }}</h1>
     <a href="{{ url_for('gestionar_ciclos') }}">&larr; Volver a Ciclos</a>
     
+    <h1>Estudiantes del Ciclo: {{ ciclo.nombre }}</h1>
+    <p><strong>Fechas:</strong> {{ ciclo.fecha_inicio.strftime('%d/%m/%Y') }} - {{ ciclo.fecha_fin.strftime('%d/%m/%Y') }}</p>
+    
     <h2>Cargar Estudiantes desde Excel</h2>
-    <p>Sube un archivo .xlsx. La primera fila debe ser de encabezado. Columna A: Carnet, Columna B: Nombre.</p>
+    <p>Sube un archivo .xlsx. Columna A: Carnet, B: Nombre, C: Semestre, D: Sección.</p>
     <form method="POST" enctype="multipart/form-data">
         <input type="file" name="file" accept=".xlsx" required>
         <button type="submit">Cargar Estudiantes</button>
@@ -13,6 +15,8 @@
 
     <hr>
     <h2>Listado de Estudiantes</h2>
+    <!-- Contenedor para mensajes de cliente (flash messages sin recarga) -->
+    <div id="client-flash-container"></div>
     <table>
         <thead>
             <tr>
@@ -20,29 +24,134 @@
                 <th>Nombre Completo</th>
                 <th>Semestre</th>
                 <th>Sección</th>
-                <th>Estado de Pago</th>
+                <th>Estado Pago</th>
+                <th>Estado Académico</th>
                 <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for est in estudiantes %}
-            <tr>
+            <tr id="estudiante-{{ est.id }}">
                 <td>{{ est.carnet }}</td>
                 <td>{{ est.nombre }}</td>
                 <td>{{ est.semestre }}</td>
                 <td>{{ est.seccion }}</td>
                 <td>
                     {% if est.fecha_pago %}
-                        <span class="badge badge-success">Pagado ({{ est.fecha_pago.strftime('%d/%m/%Y') }})</span>
+                        <span class="badge badge-success">Pagado</span>
                     {% else %}
                         <span class="badge badge-warning">Pendiente</span>
                     {% endif %}
                 </td>
                 <td>
-                    <a href="{{ url_for('verificar_pago', id_estudiante=est.id) }}">Registrar Pago</a>
+                    <span class="badge-estado badge-{{ 'success' if est.estado_academico == 'Aprobado' else 'warning' }}">
+                        {{ est.estado_academico }}
+                    </span>
+                </td>
+                <td class="actions-cell">
+                    <!-- Botón para abrir el modal y cambiar el estado -->
+                    <button class="button-action-small" onclick="mostrarModalEstado({{ est.id }}, '{{ est.estado_academico }}')">
+                        Cambiar Estado
+                    </button>
+                    <!-- Botón para ir a la página de pago -->
+                    <a href="{{ url_for('verificar_pago', id_estudiante=est.id) }}" class="button-action-small">Registrar Pago</a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+{% endblock %}
+
+<!-- Bloque de scripts para la funcionalidad de la página -->
+{% block scripts %}
+<script>
+// --- FUNCIONES GLOBALES ---
+// Estas funciones deben estar en el ámbito global para que el atributo 'onclick' en el HTML pueda encontrarlas.
+function mostrarModalEstado(estudianteId, estadoActual) {
+    const modal = document.getElementById('estadoModal');
+    const form = document.getElementById('form-estado');
+    const select = document.getElementById('nuevo-estado-select');
+    const hiddenId = document.getElementById('estudiante-id-hidden');
+
+    if (!modal || !select || !hiddenId) {
+        console.error("Error: No se encontraron uno o más elementos del modal.");
+        return;
+    }
+
+    select.value = estadoActual;
+    hiddenId.value = estudianteId;
+    modal.style.display = 'block';
+}
+
+function cerrarModalEstado() {
+    const modal = document.getElementById('estadoModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// --- EVENT LISTENER PRINCIPAL ---
+document.addEventListener('DOMContentLoaded', function() {
+    // Función para mostrar mensajes de flash en el cliente
+    function showClientFlash(message, category) {
+        const container = document.getElementById('client-flash-container');
+        if (!container) return;
+        const flashDiv = document.createElement('div');
+        flashDiv.className = `alert alert-${category}`;
+        flashDiv.textContent = message;
+        container.appendChild(flashDiv);
+        setTimeout(() => {
+            flashDiv.style.transition = 'opacity 0.5s';
+            flashDiv.style.opacity = '0';
+            setTimeout(() => flashDiv.remove(), 500);
+        }, 3500);
+    }
+
+    // Manejar el envío del formulario del modal
+    const formEstado = document.getElementById('form-estado');
+    if (formEstado) {
+        formEstado.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const estudianteId = document.getElementById('estudiante-id-hidden').value;
+            const nuevoEstado = document.getElementById('nuevo-estado-select').value;
+
+            fetch(`/api/estudiante/${estudianteId}/actualizar_estado`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado: nuevoEstado })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showClientFlash(data.message, 'success');
+                    // Actualizar el badge en la tabla sin recargar
+                    const badge = document.querySelector(`#estudiante-${estudianteId} .badge-estado`);
+                    if (badge) {
+                        badge.textContent = nuevoEstado;
+                        badge.className = `badge-estado badge-${nuevoEstado === 'Aprobado' ? 'success' : 'warning'}`;
+                    }
+                } else {
+                    showClientFlash(data.message || 'Error al actualizar el estado.', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showClientFlash('Error de comunicación con el servidor.', 'danger');
+            })
+            .finally(() => {
+                cerrarModalEstado();
+            });
+        });
+    }
+
+    // Cerrar el modal si el usuario hace clic fuera de él
+    window.onclick = function(event) {
+        const modal = document.getElementById('estadoModal');
+        if (event.target == modal) {
+            cerrarModalEstado();
+        }
+    }
+});
+</script>
 {% endblock %}

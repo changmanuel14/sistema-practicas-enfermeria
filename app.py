@@ -48,11 +48,12 @@ def generar_pdf_grupos(grupos, titulo="Reporte de Grupos"):
 
         # Listado de estudiantes
         story.append(Paragraph("Estudiantes Asignados:", styles['Heading2']))
-        data_estudiantes = [['Carnet', 'Nombre', 'Semestre', 'Sección']]
+        # CAMBIO: Añadir columna para el estado académico
+        data_estudiantes = [['Carnet', 'Nombre', 'Semestre', 'Sección', 'Estado Académico']]
         for est in grupo.estudiantes:
-            data_estudiantes.append([est.carnet, est.nombre, est.semestre, est.seccion])
+            data_estudiantes.append([est.carnet, est.nombre, est.semestre, est.seccion, est.estado_academico])
         
-        tabla_estudiantes = Table(data_estudiantes, hAlign='LEFT')
+        tabla_estudiantes = Table(data_estudiantes, hAlign='LEFT', colWidths=[1.2*inch, 3*inch, 1*inch, 1*inch, 1.5*inch])
         tabla_estudiantes.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -108,7 +109,22 @@ def register_routes(app):
         lista_estudiantes = [{'id': est.id, 'carnet': est.carnet, 'nombre': est.nombre} for est in estudiantes]
         return jsonify(lista_estudiantes)
     
-    # --- Módulo 1: Creación de Ciclo ---
+    @app.route('/api/estudiante/<int:id_estudiante>/actualizar_estado', methods=['POST'])
+    def actualizar_estado_estudiante(id_estudiante):
+        """API para actualizar el estado académico de un estudiante."""
+        estudiante = Estudiante.query.get_or_404(id_estudiante)
+        data = request.get_json()
+        nuevo_estado = data.get('estado')
+        if not nuevo_estado:
+            return jsonify({"status": "error", "message": "El nuevo estado no puede estar vacío."}), 400
+        try:
+            estudiante.estado_academico = nuevo_estado
+            db.session.commit()
+            return jsonify({"status": "success", "message": "Estado académico actualizado correctamente."})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"status": "error", "message": f"Error al actualizar el estado: {e}"}), 500
+        
     @app.route('/ciclos', methods=['GET', 'POST'])
     def gestionar_ciclos():
         if request.method == 'POST':
