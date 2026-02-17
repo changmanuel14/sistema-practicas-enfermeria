@@ -73,9 +73,25 @@ class Grupo(db.Model):
         return dias_habiles if dias_habiles > 0 else 1 # Evitar división por cero
 
     def calcular_pago_por_turno(self):
-        pago_total = self.calcular_pago_total()
+        """
+        Calcula el pago por turno para un grupo.
+        El pago tiene un máximo de Q200.00, sin importar el número de estudiantes.
+        """
+        pago_total = len(self.estudiantes) * 400
         dias = self.calcular_dias_habiles()
-        return round(pago_total / dias, 2)
+        
+        # Evitar división por cero
+        if dias == 0:
+            return 0.0
+            
+        # Calcula el pago base sin límite
+        pago_sin_cap = pago_total / dias
+        
+        # Aplica el límite máximo (cap) de Q200.00
+        # La función min() devuelve el valor más bajo entre los dos.
+        pago_final = min(pago_sin_cap, 200.00)
+        
+        return round(pago_final, 2)
 
     def __repr__(self):
         return f'<Grupo {self.lugar} - {self.modalidad}>'
@@ -87,7 +103,7 @@ class Reporte(db.Model):
     fecha_turno = db.Column(db.Date, nullable=False, default=datetime.date.today)
     estado = db.Column(db.String(20), default='realizado')
     pagado = db.Column(db.Boolean, default=False, nullable=False)
-    pago_turno_fijado = db.Column(db.Numeric(10, 2), nullable=True) # Usar Numeric para dinero
+    pago_turno_fijado = db.Column(db.Numeric(10, 2), nullable=True, default=0)
     supervisor = db.relationship('Supervisor', backref='reportes')
 
     def __repr__(self):

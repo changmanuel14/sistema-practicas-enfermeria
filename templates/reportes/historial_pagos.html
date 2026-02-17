@@ -1,64 +1,74 @@
 {% extends "base.html" %}
 {% block title %}Historial de Pagos{% endblock %}
 {% block content %}
-    <h1>Historial de Pagos Realizados</h1>
-    
-    {% if datos_historial %}
-        {% for data in datos_historial %}
-        <div class="reporte-supervisor">
-            <h2>{{ data.supervisor }}</h2>
-            {% for ciclo_data in data.ciclos %}
-            <div class="pago-mes-container">
-                <h3>{{ ciclo_data.ciclo_obj.nombre }} ({{ ciclo_data.ciclo_obj.anio }})</h3>
-                <button class="toggle-detalles" data-target="detalles-historial-{{ data.supervisor | replace(' ', '-') }}-{{ ciclo_data.ciclo_obj.nombre | replace(' ', '-') }}">
-                    Ver Turnos de este Ciclo
-                </button>
-                
-                <div id="detalles-historial-{{ data.supervisor | replace(' ', '-') }}-{{ ciclo_data.ciclo_obj.nombre | replace(' ', '-') }}" class="detalles-turnos" style="display: none;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Fecha del Turno</th>
-                                <th>Lugar / Modalidad</th>
-                                <th>Pago por Turno (Fijado)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for reporte in data.reportes %}
-                            <tr>
-                                <td>{{ reporte.fecha_turno.strftime('%d/%m/%Y') }}</td>
-                                <td>{{ reporte.grupo.lugar }} ({{ reporte.grupo.modalidad }})</td>
-                                <td>Q. {{ "%.2f"|format(reporte.pago_turno_fijado) }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {% endfor %}
+<h1>Historial de Pagos Realizados</h1>
+
+{% if datos_historial %}
+{% for data in datos_historial %}
+<div class="reporte-supervisor">
+    <h2>{{ data.supervisor }}</h2>
+    {% for ciclo_data in data.ciclos %}
+    <div class="pago-mes-container">
+        <h3>{{ ciclo_data.ciclo_obj.nombre }} ({{ ciclo_data.ciclo_obj.anio }})</h3>
+        <button class="toggle-detalles"
+            data-target="detalles-historial-{{ data.supervisor | replace(' ', '-') }}-{{ ciclo_data.ciclo_obj.nombre | replace(' ', '-') }}">
+            Ver Turnos de este Ciclo
+        </button>
+
+        <div id="detalles-historial-{{ data.supervisor | replace(' ', '-') }}-{{ ciclo_data.ciclo_obj.nombre | replace(' ', '-') }}"
+            class="detalles-turnos" style="display: none;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha del Turno</th>
+                        <th>Lugar / Modalidad</th>
+                        <th>Estado</th>
+                        <th>Pago por Turno (Fijado)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- CAMBIO AQUÍ: de "data.reportes" a "ciclo_data.reportes" -->
+                    {% for reporte in ciclo_data.reportes %}
+                    <tr>
+                        <td>{{ reporte.fecha_turno.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ reporte.grupo.lugar }} ({{ reporte.grupo.modalidad }})</td>
+                        <td>{{ reporte.estado.title() }}</td>
+                        <td>Q. {{ "%.2f"|format(reporte.pago_turno_fijado) }}</td>
+                    </tr>
+                    {% else %}
+                    <!-- Opcional: un mensaje si no hay reportes en este ciclo -->
+                    <tr>
+                        <td colspan="4">No hay turnos registrados para este ciclo.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        <hr>
-        {% endfor %}
-    {% else %}
-        <p>No hay registros de pagos realizados.</p>
-    {% endif %}
+    </div>
+    {% endfor %}
+</div>
+<hr>
+{% endfor %}
+{% else %}
+<p>No hay registros de pagos realizados.</p>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Lógica para mostrar/ocultar los detalles de los turnos
-    // Este código es genérico y funciona para ambas páginas
-    const toggleButtons = document.querySelectorAll('.toggle-detalles');
-    toggleButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetId = button.getAttribute('data-target');
-            const detallesDiv = document.getElementById(targetId);
-            if (detallesDiv) {
-                detallesDiv.style.display = detallesDiv.style.display === 'none' ? 'block' : 'none';
-            }
+    document.addEventListener('DOMContentLoaded', function () {
+        // Lógica para mostrar/ocultar los detalles de los turnos
+        // Este código es genérico y funciona para ambas páginas
+        const toggleButtons = document.querySelectorAll('.toggle-detalles');
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetId = button.getAttribute('data-target');
+                const detallesDiv = document.getElementById(targetId);
+                if (detallesDiv) {
+                    detallesDiv.style.display = detallesDiv.style.display === 'none' ? 'block' : 'none';
+                }
+            });
         });
     });
-});
 </script>
 {% endblock %}

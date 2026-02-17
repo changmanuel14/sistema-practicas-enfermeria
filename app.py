@@ -253,8 +253,9 @@ def register_routes(app):
             modalidad = request.form.get('modalidad')
             estudiantes_seleccionados_ids = request.form.getlist('estudiantes')
 
-            if len(estudiantes_seleccionados_ids) > 10 or len(estudiantes_seleccionados_ids) < 1:
-                flash('El grupo debe tener entre 1 y 10 estudiantes.', 'danger')
+            # --- CAMBIO: Se elimina el límite superior de 10 estudiantes ---
+            if len(estudiantes_seleccionados_ids) < 1:
+                flash('El grupo debe tener al menos 1 estudiante.', 'danger')
                 return redirect(url_for('gestionar_grupos'))
 
             grupos_conflicto = Grupo.query.filter(
@@ -350,9 +351,10 @@ def register_routes(app):
             modalidad = request.form.get('modalidad')
             grupo.modalidad = modalidad
             estudiantes_seleccionados_ids = request.form.getlist('estudiantes')
-            
-            if len(estudiantes_seleccionados_ids) > 10 or len(estudiantes_seleccionados_ids) < 1:
-                flash('El grupo debe tener entre 1 y 10 estudiantes.', 'danger')
+
+            # --- CAMBIO: Se elimina el límite superior de 10 estudiantes ---
+            if len(estudiantes_seleccionados_ids) < 1:
+                flash('El grupo debe tener al menos 1 estudiante.', 'danger')
                 return redirect(url_for('editar_grupo', id=id))
             
             # Excluimos el grupo actual de la búsqueda y comprobamos la modalidad
@@ -384,9 +386,22 @@ def register_routes(app):
             
             try:
                 grupo.estudiantes = estudiantes_obj
-                
+
+                # --- NUEVA LÓGICA: Actualizar pagos de turnos no pagados ---
+                # Obtenemos todos los reportes (turnos) de este grupo que aún no han sido pagados.
+                reportes_pendientes_actualizar = Reporte.query.filter_by(id_grupo=grupo.id, pagado=False).all()
+
+                # Recorremos cada reporte pendiente
+                for reporte in reportes_pendientes_actualizar:
+                    # Calculamos el nuevo monto usando el método del grupo ya actualizado en memoria
+                    nuevo_pago = grupo.calcular_pago_por_turno()
+                    # Fijamos el nuevo valor en el reporte
+                    reporte.pago_turno_fijado = nuevo_pago
+                # --- FIN DE LA NUEVA LÓGICA ---
+
                 db.session.commit()
-                flash('Grupo actualizado exitosamente. Los pagos se han recalculado.', 'success')
+                # He actualizado el mensaje flash para que sea más informativo
+                flash('Grupo actualizado exitosamente. Los pagos pendientes han sido recalculados.', 'success')
                 return redirect(url_for('gestionar_grupos'))
             except Exception as e:
                 db.session.rollback()
@@ -394,7 +409,7 @@ def register_routes(app):
 
         # El resto de la función GET no cambia
         supervisores = Supervisor.query.order_by(Supervisor.nombre).all()
-        ciclos = Ciclo.query.order_by(Ciclo.anio.desc()).all() # <-- ¡AÑADE ESTA LÍNEA!
+        ciclos = Ciclo.query.order_by(Ciclo.anio.desc()).all()
         estudiantes = Estudiante.query.filter_by(id_ciclo=grupo.id_ciclo).order_by(Estudiante.nombre).all()
         return render_template('grupos/editar_grupo.html', grupo=grupo, supervisores=supervisores, estudiantes=estudiantes, ciclos=ciclos)
 
@@ -496,38 +511,51 @@ def register_routes(app):
         
         return redirect(url_for('registrar_turnos_grupo', id_grupo=id_grupo))
 
-    # --- Módulo 7: Reporte de Montos a Pagar ---
     @app.route('/reportes/pagos')
     def reporte_pagos():
         supervisores = Supervisor.query.order_by(Supervisor.apellido).all()
         datos_reporte = []
         
         for sup in supervisores:
-            reportes_pagados = Reporte.query.filter_by(id_supervisor=sup.id, pagado=True).order_by(Reporte.fecha_turno).all()
-            pagos_mensuales = {}
-            total_general = 0
+            # --- CAMBIO CLAVE: La consulta ahora filtra por pagado=False
+            reportes_pendientes = Reporte.query.filter_by(id_supervisor=sup.id, pagado=False).order_by(Reporte.fecha_turno.desc()).all()
             
-            for reporte in reportes_pagados:
-                anio_mes = reporte.fecha_turno.strftime('%Y-%m')
-                if anio_mes not in pagos_mensuales:
-                    pagos_mensuales[anio_mes] = {'mes': anio_mes, 'cantidad_turnos': 0, 'total_pago': 0, 'reportes': []}
-
-                pago_turno = float(reporte.pago_turno_fijado) if reporte.pago_turno_fijado else 0.0
+            if reportes_pendientes:
+                pagos_mensuales = {}
+                total_general = 0
                 
-                pagos_mensuales[anio_mes]['cantidad_turnos'] += 1
-                pagos_mensuales[anio_mes]['total_pago'] += pago_turno
-                total_general += pago_turno
+                for reporte in reportes_pendientes:
+                    try:
+                        # --- MEJORA: Calcula el pago si no está fijado ---
+                        if reporte.pago_turno_fijado is not None:
+                            pago_turno = float(reporte.pago_turno_fijado)
+                        else:
+                            # Calcula el pago usando el método del modelo Grupo
+                            pago_turno = reporte.grupo.calcular_pago_por_turno()
+                    except Exception as e:
+                        print(f"Error: No se pudo obtener el pago para el reporte {reporte.id}. Error: {e}")
+                        continue
+                    
+                    mes = reporte.fecha_turno.strftime('%Y-%m')
+                    if mes not in pagos_mensuales:
+                        pagos_mensuales[mes] = {'mes': mes, 'cantidad_turnos': 0, 'total_pago': 0, 'reportes': []}
+                    
+                    pagos_mensuales[mes]['cantidad_turnos'] += 1
+                    pagos_mensuales[mes]['total_pago'] += pago_turno
+                    total_general += pago_turno
+                    pagos_mensuales[mes]['reportes'].append(reporte)
                 
-                pagos_mensuales[anio_mes]['reportes'].append(reporte)
-            
-            if pagos_mensuales:
-                datos_reporte.append({
-                    'supervisor': sup.nombre_completo(),
-                    'pagos': list(pagos_mensuales.values()),
-                    'total_general': round(total_general, 2)
-                })
-                
-        return render_template('reportes/reporte_pagos.html', datos_reporte=datos_reporte)
+                if pagos_mensuales:
+                    datos_reporte.append({
+                        'supervisor': sup.nombre_completo(),
+                        'pagos': list(pagos_mensuales.values()),
+                        'total_general': round(total_general, 2)
+                    })
+                    
+        if datos_reporte:
+            return render_template('reportes/reporte_pagos.html', datos_reporte=datos_reporte)
+        else:
+            return render_template('reportes/reporte_pagos.html', datos_reporte={})
     
     @app.route('/reportes/historial_pagos')
     def historial_pagos():
@@ -536,9 +564,7 @@ def register_routes(app):
         
         for sup in supervisores:
             reportes_pagados = Reporte.query.filter_by(id_supervisor=sup.id, pagado=True).order_by(Reporte.fecha_turno.desc()).all()
-            
             if reportes_pagados:
-                # --- NUEVA LÓGICA: Agrupar reportes por ciclo ---
                 ciclos_dict = {}
                 for reporte in reportes_pagados:
                     ciclo = reporte.grupo.ciclo
@@ -558,21 +584,20 @@ def register_routes(app):
     
     @app.route('/api/reporte/<int:id_reporte>/marcar_pagado', methods=['POST'])
     def marcar_turno_pagado(id_reporte):
-        """API para marcar un turno específico como pagado."""
         reporte = Reporte.query.get_or_404(id_reporte)
         if reporte.pagado:
             return jsonify({"status": "error", "message": "Este turno ya estaba marcado como pagado."}), 400
         
         try:
+            # Calcular el pago actual y fijarlo
             pago_actual = reporte.grupo.calcular_pago_por_turno()
             reporte.pago_turno_fijado = pago_actual
-            
             reporte.pagado = True
             db.session.commit()
             return jsonify({"status": "success", "message": "Turno marcado como pagado correctamente."})
         except Exception as e:
             db.session.rollback()
-            return jsonify({"status": "error", "message": f"Error al marcar el turno: {e}"}), 500
+            return jsonify({"status": "error", "message": f"Error al marcar el pago: {e}"}), 500
 
     @app.route('/api/turno/<int:id_grupo>/procesar', methods=['POST'])
     def procesar_accion_turno(id_grupo):
@@ -595,6 +620,7 @@ def register_routes(app):
         SPANISH_DAYS = {0: 'Lunes', 1: 'Martes', 2: 'Miércoles', 3: 'Jueves', 4: 'Viernes', 5: 'Sábado', 6: 'Domingo'}
         SPANISH_MONTHS = {1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril', 5: 'mayo', 6: 'junio', 7: 'julio', 8: 'agosto', 9: 'septiembre', 10: 'octubre', 11: 'noviembre', 12: 'diciembre'}
         def format_date_spanish(d): return f"{SPANISH_DAYS[d.weekday()]}, {d.day} de {SPANISH_MONTHS[d.month]} de {d.year}"
+        pago_turno = grupo.calcular_pago_por_turno()
 
         try:
             nuevo_reporte = Reporte(
@@ -602,16 +628,19 @@ def register_routes(app):
                 id_supervisor=grupo.id_supervisor,
                 fecha_turno=fecha_turno,
                 estado='realizado',
-                pagado=False
+                pagado=False,
+                pago_turno_fijado=pago_turno
             )
 
             if accion == 'registrar': pass
             elif accion == 'feriado':
                 nuevo_reporte.estado = 'feriado'
                 nuevo_reporte.pagado = True
+                nuevo_reporte.pago_turno_fijado = 0.0
             elif accion == 'no_dio':
                 nuevo_reporte.estado = 'no se dio' # Usamos 'no se dio' para que se vea bien
                 nuevo_reporte.pagado = True
+                nuevo_reporte.pago_turno_fijado = 0.0
             else:
                 return jsonify({"status": "error", "message": "Acción no válida."}), 400
 
