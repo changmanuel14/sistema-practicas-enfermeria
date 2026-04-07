@@ -125,6 +125,28 @@ def register_routes(app):
             db.session.rollback()
             return jsonify({"status": "error", "message": f"Error al actualizar el estado: {e}"}), 500
         
+    @app.route('/api/estudiante/<int:id_estudiante>/registrar_pago', methods=['POST'])
+    def registrar_pago_api(id_estudiante):
+        """API para registrar el pago de un estudiante desde un modal."""
+        estudiante = Estudiante.query.get_or_404(id_estudiante)
+        data = request.get_json()
+        fecha_str = data.get('fecha_pago')
+        
+        if not fecha_str:
+            return jsonify({"status": "error", "message": "La fecha de pago no puede estar vacía."}), 400
+
+        # Si el estudiante ya tiene un pago registrado, no hacer nada
+        if estudiante.fecha_pago:
+            return jsonify({"status": "info", "message": "Este estudiante ya tiene un pago registrado."}), 200
+
+        try:
+            estudiante.fecha_pago = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            db.session.commit()
+            return jsonify({"status": "success", "message": "Pago registrado exitosamente."})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"status": "error", "message": f"Error al registrar el pago: {e}"}), 500
+        
     @app.route('/ciclos', methods=['GET', 'POST'])
     def gestionar_ciclos():
         if request.method == 'POST':
@@ -202,24 +224,6 @@ def register_routes(app):
         estudiantes = Estudiante.query.filter_by(id_ciclo=id_ciclo).order_by(Estudiante.nombre).all()
         return render_template('estudiantes/lista_estudiantes.html', ciclo=ciclo, estudiantes=estudiantes)
 
-    # --- Módulo 3: Verificación de Pago ---
-    @app.route('/estudiante/<int:id_estudiante>/pago', methods=['GET', 'POST'])
-    def verificar_pago(id_estudiante):
-        estudiante = Estudiante.query.get_or_404(id_estudiante)
-        if request.method == 'POST':
-            try:
-                estudiante.fecha_pago = datetime.datetime.strptime(
-                    request.form['fecha_pago'], '%Y-%m-%d').date()
-                db.session.commit()
-                flash('Pago registrado exitosamente.', 'success')
-                return redirect(url_for('gestionar_estudiantes', id_ciclo=estudiante.id_ciclo))
-            except Exception as e:
-                db.session.rollback()
-                flash(f'Error al registrar el pago: {e}', 'danger')
-
-        return render_template('estudiantes/verificar_pago.html', estudiante=estudiante)
-
-    # --- Módulo 4: Ingreso de Supervisores ---
     @app.route('/supervisores', methods=['GET', 'POST'])
     def gestionar_supervisores():
         if request.method == 'POST':

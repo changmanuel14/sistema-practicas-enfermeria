@@ -36,7 +36,7 @@
                 <td>{{ est.nombre }}</td>
                 <td>{{ est.semestre }}</td>
                 <td>{{ est.seccion }}</td>
-                <td>
+                <td id="pago-{{ est.id }}">
                     {% if est.fecha_pago %}
                         <span class="badge badge-success">Pagado</span>
                     {% else %}
@@ -53,20 +53,64 @@
                     <button class="button-action-small" onclick="mostrarModalEstado({{ est.id }}, '{{ est.estado_academico }}')">
                         Cambiar Estado
                     </button>
-                    <!-- Botón para ir a la página de pago -->
-                    <a href="{{ url_for('verificar_pago', id_estudiante=est.id) }}" class="button-action-small">Registrar Pago</a>
+                    <!-- CAMBIO: Botón para abrir el modal de pago, en lugar de un enlace -->
+                    <button class="button-action-small" id="btn-pago-{{ est.id }}" onclick="mostrarModalPago({{ est.id }})" {% if est.fecha_pago %}disabled{% endif %}>
+                        Registrar Pago
+                    </button>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- Modal para Cambiar Estado (ya existía) -->
+    <div id="estadoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close" onclick="cerrarModalEstado()">&times;</span>
+                <h2>Actualizar Estado Académico</h2>
+            </div>
+            <div class="modal-body">
+                <form id="form-estado">
+                    <input type="hidden" id="estudiante-id-hidden">
+                    <label for="nuevo-estado-select">Nuevo Estado:</label>
+                    <select id="nuevo-estado-select" name="estado" required>
+                        <option value="Aprobado">Aprobado</option>
+                        <option value="Reprobó curso">Reprobó curso</option>
+                        <option value="Pendiente de evaluación">Pendiente de evaluación</option>
+                    </select>
+                    <br><br>
+                    <button type="submit">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVO: Modal para Registrar Pago -->
+    <div id="pagoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close" onclick="cerrarModalPago()">&times;</span>
+                <h2>Registrar Pago de Estudiante</h2>
+            </div>
+            <div class="modal-body">
+                <form id="form-pago">
+                    <input type="hidden" id="estudiante-id-pago-hidden">
+                    <label for="fecha-pago-input">Fecha del Pago:</label>
+                    <input type="date" id="fecha-pago-input" name="fecha_pago" required>
+                    <br><br>
+                    <button type="submit">Registrar Pago</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}
 
 <!-- Bloque de scripts para la funcionalidad de la página -->
 {% block scripts %}
 <script>
 // --- FUNCIONES GLOBALES ---
-// Estas funciones deben estar en el ámbito global para que el atributo 'onclick' en el HTML pueda encontrarlas.
 function mostrarModalEstado(estudianteId, estadoActual) {
     const modal = document.getElementById('estadoModal');
     const form = document.getElementById('form-estado');
@@ -74,7 +118,7 @@ function mostrarModalEstado(estudianteId, estadoActual) {
     const hiddenId = document.getElementById('estudiante-id-hidden');
 
     if (!modal || !select || !hiddenId) {
-        console.error("Error: No se encontraron uno o más elementos del modal.");
+        console.error("Error: No se encontraron elementos del modal de estado.");
         return;
     }
 
@@ -85,6 +129,30 @@ function mostrarModalEstado(estudianteId, estadoActual) {
 
 function cerrarModalEstado() {
     const modal = document.getElementById('estadoModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// --- NUEVAS FUNCIONES PARA EL MODAL DE PAGO ---
+function mostrarModalPago(estudianteId) {
+    const modal = document.getElementById('pagoModal');
+    const hiddenId = document.getElementById('estudiante-id-pago-hidden');
+    const dateInput = document.getElementById('fecha-pago-input');
+
+    if (!modal || !hiddenId || !dateInput) {
+        console.error("Error: No se encontraron elementos del modal de pago.");
+        return;
+    }
+
+    hiddenId.value = estudianteId;
+    // Establecer la fecha de hoy por defecto
+    dateInput.valueAsDate = new Date();
+    modal.style.display = 'block';
+}
+
+function cerrarModalPago() {
+    const modal = document.getElementById('pagoModal');
     if (modal) {
         modal.style.display = 'none';
     }
@@ -107,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3500);
     }
 
-    // Manejar el envío del formulario del modal
+    // Manejar el envío del formulario del modal de estado
     const formEstado = document.getElementById('form-estado');
     if (formEstado) {
         formEstado.addEventListener('submit', function(e) {
@@ -125,7 +193,6 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.status === 'success') {
                     showClientFlash(data.message, 'success');
-                    // Actualizar el badge en la tabla sin recargar
                     const badge = document.querySelector(`#estudiante-${estudianteId} .badge-estado`);
                     if (badge) {
                         badge.textContent = nuevoEstado;
@@ -145,11 +212,57 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // NUEVO: Manejar el envío del formulario del modal de pago
+    const formPago = document.getElementById('form-pago');
+    if (formPago) {
+        formPago.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const estudianteId = document.getElementById('estudiante-id-pago-hidden').value;
+            const fechaPago = document.getElementById('fecha-pago-input').value;
+
+            fetch(`/api/estudiante/${estudianteId}/registrar_pago`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fecha_pago: fechaPago })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showClientFlash(data.message, 'success');
+                    // Actualizar el badge de pago en la tabla
+                    const pagoCell = document.getElementById(`pago-${estudianteId}`);
+                    if (pagoCell) {
+                        pagoCell.innerHTML = '<span class="badge badge-success">Pagado</span>';
+                    }
+                    // Deshabilitar el botón de pago para evitar duplicados
+                    const btnPago = document.getElementById(`btn-pago-${estudianteId}`);
+                    if(btnPago) {
+                        btnPago.disabled = true;
+                    }
+                } else {
+                    showClientFlash(data.message || 'Error al registrar el pago.', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showClientFlash('Error de comunicación con el servidor.', 'danger');
+            })
+            .finally(() => {
+                cerrarModalPago();
+            });
+        });
+    }
+
     // Cerrar el modal si el usuario hace clic fuera de él
     window.onclick = function(event) {
-        const modal = document.getElementById('estadoModal');
-        if (event.target == modal) {
+        const estadoModal = document.getElementById('estadoModal');
+        const pagoModal = document.getElementById('pagoModal');
+        if (event.target == estadoModal) {
             cerrarModalEstado();
+        }
+        if (event.target == pagoModal) {
+            cerrarModalPago();
         }
     }
 });
