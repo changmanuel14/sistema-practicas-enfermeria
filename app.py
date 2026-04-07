@@ -242,7 +242,7 @@ def register_routes(app):
                 flash(f'Error al agregar supervisor: {e}', 'danger')
             return redirect(url_for('gestionar_supervisores'))
 
-        supervisores = Supervisor.query.order_by(Supervisor.apellido).all()
+        supervisores = Supervisor.query.order_by(Supervisor.nombre).all()
         return render_template('supervisores/lista_supervisores.html', supervisores=supervisores)
 
     @app.route('/grupos', methods=['GET', 'POST'])
