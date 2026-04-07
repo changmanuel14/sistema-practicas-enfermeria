@@ -75,20 +75,26 @@ class Grupo(db.Model):
     def calcular_pago_por_turno(self):
         """
         Calcula el pago por turno para un grupo.
-        El pago tiene un máximo de Q200.00, sin importar el número de estudiantes.
+        - Considera un máximo de 10 estudiantes para el cálculo.
+        - El pago por turno tiene un máximo de Q200.00.
         """
-        pago_total = len(self.estudiantes) * 400
+        # --- CAMBIO CLAVE: Limitar el número de estudiantes para el cálculo a un máximo de 10 ---
+        # Si el grupo tiene 10 o menos estudiantes, usa ese número.
+        # Si tiene más de 10 (ej. 11, 12, 15), usa 10 para el cálculo.
+        num_estudiantes_para_pago = min(len(self.estudiantes), 10)
+        pago_total = num_estudiantes_para_pago * 400
+        # --- FIN DEL CAMBIO ---
+
         dias = self.calcular_dias_habiles()
         
         # Evitar división por cero
         if dias == 0:
             return 0.0
             
-        # Calcula el pago base sin límite
+        # Calcula el pago base
         pago_sin_cap = pago_total / dias
         
-        # Aplica el límite máximo (cap) de Q200.00
-        # La función min() devuelve el valor más bajo entre los dos.
+        # El límite de Q200.00 por turno sigue aplicando
         pago_final = min(pago_sin_cap, 200.00)
         
         return round(pago_final, 2)
