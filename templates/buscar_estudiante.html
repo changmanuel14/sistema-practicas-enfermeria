@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Buscador de Estudiantes{% endblock %}
+
+{% block content %}
+<h1>Buscador de Estudiantes</h1>
+<p>Busca un estudiante por su nombre o número de carnet.</p>
+
+<form method="POST" class="search-form">
+    <input type="search" name="search_term" id="search_term" placeholder="Ej: Ana Lopez o 20212345"
+        value="{{ search_term }}" autocomplete="off" required>
+    <button type="submit">Buscar</button>
+</form>
+
+<hr>
+
+{% if search_term %}
+<h2>Resultados para: "{{ search_term }}"</h2>
+
+{% if estudiantes %}
+{% for estudiante in estudiantes %}
+<div class="student-result-card">
+    <h3>{{ estudiante.nombre }} ({{ estudiante.carnet }})</h3>
+    <p><strong>Ciclo:</strong> {{ estudiante.ciclo.nombre }} ({{ estudiante.ciclo.anio }})</p>
+
+    {% if estudiante.grupos %}
+    <h4>Grupos Asignados:</h4>
+    <ul class="group-list">
+        {% for grupo in estudiante.grupos %}
+        <li>
+            <strong>{{ grupo.lugar }}</strong> ({{ grupo.modalidad }})
+            <br>
+            <small>
+                Supervisor: {{ grupo.supervisor.nombre_completo() }} |
+                Fechas: {{ grupo.fecha_inicio.strftime('%d/%m/%Y') }} al {{ grupo.fecha_fin.strftime('%d/%m/%Y') }}
+            </small>
+            <a href="{{ url_for('ver_grupo', id=grupo.id) }}" class="button-action-small" style="float: right;">Ver
+                Grupo</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p><em>Este estudiante no está asignado a ningún grupo.</em></p>
+    {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<p>No se encontraron estudiantes que coincidan con "<strong>{{ search_term }}</strong>".</p>
+{% endif %}
+{% else %}
+<p>Introduce un nombre o carnet en el campo de búsqueda para comenzar.</p>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{# No se necesita JavaScript específico para esta página, el manejo es del lado del servidor. #}
+{% endblock %}

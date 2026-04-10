@@ -345,6 +345,29 @@ def register_routes(app):
                             ciclos=ciclos,
                             estudiantes=estudiantes)
 
+    # --- Módulo Extra: Buscador de Estudiantes ---
+    @app.route('/buscar_estudiante', methods=['GET', 'POST'])
+    def buscar_estudiante():
+        estudiantes_encontrados = []
+        search_term = ""
+        
+        if request.method == 'POST':
+            search_term = request.form.get('search_term', '').strip()
+            if search_term:
+                # Crea el patrón de búsqueda para 'LIKE' en SQL (ej: '%juan%')
+                search_pattern = f'%{search_term}%'
+                
+                # Busca estudiantes donde el nombre o el carnet coincidan (ignorando mayúsculas/minúsculas)
+                # Usamos 'ilike' para una búsqueda insensible a mayúsculas.
+                # Limitamos a 50 resultados para no sobrecargar la página.
+                query = Estudiante.query.filter(
+                    (Estudiante.nombre.ilike(search_pattern)) | 
+                    (Estudiante.carnet.ilike(search_pattern))
+                )
+                estudiantes_encontrados = query.limit(50).all()
+
+        # Renderiza la plantilla, pasándole los resultados y el término buscado
+        return render_template('buscar_estudiante.html', estudiantes=estudiantes_encontrados, search_term=search_term)
 
     @app.route('/grupo/<int:id>/editar', methods=['GET', 'POST'])
     def editar_grupo(id):

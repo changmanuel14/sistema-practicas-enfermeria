@@ -570,3 +570,69 @@ footer {
     border-radius: 12px;
     color: var(--light-text);
 }
+
+/* Estilos para la página de búsqueda de estudiantes */
+.search-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.search-form input[type="search"] {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.search-form button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.search-form button:hover {
+    background-color: #0056b3;
+}
+
+.student-result-card {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-left: 5px solid #007bff;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+}
+
+.student-result-card h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.student-result-card h4 {
+    margin-bottom: 10px;
+    color: #555;
+}
+
+.group-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.group-list li {
+    background-color: #fff;
+    border: 1px solid #eee;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    position: relative;
+}
+
+.group-list small {
+    color: #666;
+}
