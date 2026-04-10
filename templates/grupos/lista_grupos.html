@@ -23,6 +23,13 @@
         <label for="fecha_fin">Fecha de Fin:</label>
         <input type="date" id="fecha_fin" name="fecha_fin" required>
 
+        <!-- CAMBIO AÑADIDO: Campo para tipo de pago -->
+        <label for="tipo_pago">Tipo de Pago del Grupo:</label>
+        <select id="tipo_pago" name="tipo_pago" required>
+            <option value="20_turnos" selected>20 Turnos</option>
+            <option value="40_turnos">40 Turnos</option>
+        </select>
+
         <label for="modalidad">Modalidad:</label>
         <select id="modalidad" name="modalidad" required>
             <option value="matutino">Matutino</option>
@@ -38,7 +45,7 @@
         </select>
     </div>
 
-    <h3>Seleccionar Estudiantes (Máximo 10)</h3>
+    <h3>Seleccionar Estudiantes</h3>
     <!-- Contenedor para la tabla de estudiantes -->
     <div id="estudiantes-lista-container">
         <p>Por favor, selecciona un ciclo para ver los estudiantes disponibles.</p>
@@ -100,11 +107,17 @@
         const fechaInicio = document.getElementById('fecha_inicio');
         const fechaFin = document.getElementById('fecha_fin');
         const resumenPago = document.getElementById('resumen-pago');
+        // CAMBIO: Obtener el nuevo select de tipo de pago
+        const tipoPagoSelect = document.getElementById('tipo_pago');
 
         function updatePaymentSummary() {
             const selectedStudents = document.querySelectorAll('#estudiantes-table-body input[name="estudiantes"]:checked').length;
             const fInicio = new Date(fechaInicio.value);
             const fFin = new Date(fechaFin.value);
+
+            // CAMBIO EN EL CÁLCULO: Determinar la tarifa según el tipo de pago
+            const tipoPago = tipoPagoSelect ? tipoPagoSelect.value : '20_turnos';
+            const tarifaPorEstudiante = (tipoPago === '40_turnos') ? 800 : 400;
 
             if (selectedStudents > 0 && fInicio && fFin && fInicio <= fFin) {
                 let diasHabiles = 0;
@@ -117,7 +130,8 @@
                 }
 
                 if (diasHabiles > 0) {
-                    const pagoTotal = selectedStudents * 400;
+                    // CAMBIO: Usar la tarifa dinámica
+                    const pagoTotal = selectedStudents * tarifaPorEstudiante;
                     const pagoPorTurno = (pagoTotal / diasHabiles).toFixed(2);
                     resumenPago.textContent = `Resumen: ${selectedStudents} estudiantes, ${diasHabiles} días hábiles. Pago total: Q.${pagoTotal}. Pago por turno: Q.${pagoPorTurno}`;
                 } else {
@@ -199,6 +213,10 @@
 
         fechaInicio.addEventListener('change', updatePaymentSummary);
         fechaFin.addEventListener('change', updatePaymentSummary);
+        // CAMBIO: Añadir listener para el nuevo select
+        if (tipoPagoSelect) {
+            tipoPagoSelect.addEventListener('change', updatePaymentSummary);
+        }
     });
 </script>
 {% endblock %}

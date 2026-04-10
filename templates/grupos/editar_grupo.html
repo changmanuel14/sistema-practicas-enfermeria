@@ -23,6 +23,13 @@
             <label for="fecha_fin">Fecha de Fin:</label>
             <input type="date" id="fecha_fin" name="fecha_fin" value="{{ grupo.fecha_fin.strftime('%Y-%m-%d') }}" required>
             
+            <!-- CAMBIO AÑADIDO: Campo para tipo de pago, con el valor actual seleccionado -->
+            <label for="tipo_pago">Tipo de Pago del Grupo:</label>
+            <select id="tipo_pago" name="tipo_pago" required>
+                <option value="20_turnos" {% if grupo.tipo_pago == '20_turnos' %}selected{% endif %}>20 Turnos</option>
+                <option value="40_turnos" {% if grupo.tipo_pago == '40_turnos' %}selected{% endif %}>40 Turnos</option>
+            </select>
+
             <label for="modalidad">Modalidad:</label>
             <select id="modalidad" name="modalidad" required>
                 <option value="matutino" {% if grupo.modalidad == 'matutino' %}selected{% endif %}>Matutino</option>
@@ -37,7 +44,7 @@
             </select>
         </div>
         
-        <h3>Seleccionar Estudiantes (Máximo 10)</h3>
+        <h3>Seleccionar Estudiantes</h3>
         <div id="estudiantes-lista-container">
             <!-- Se llenará con JS al cargar la página -->
         </div>

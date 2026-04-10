@@ -255,6 +255,7 @@ def register_routes(app):
             fecha_inicio = datetime.datetime.strptime(request.form.get('fecha_inicio'), '%Y-%m-%d').date()
             fecha_fin = datetime.datetime.strptime(request.form.get('fecha_fin'), '%Y-%m-%d').date()
             modalidad = request.form.get('modalidad')
+            tipo_pago = request.form.get('tipo_pago', '20_turnos')
             estudiantes_seleccionados_ids = request.form.getlist('estudiantes')
 
             # --- CAMBIO: Se elimina el límite superior de 10 estudiantes ---
@@ -292,7 +293,8 @@ def register_routes(app):
                     fecha_fin=fecha_fin,
                     modalidad=modalidad,
                     id_supervisor=id_supervisor,
-                    id_ciclo=id_ciclo
+                    id_ciclo=id_ciclo,
+                    tipo_pago=tipo_pago
                 )
                 db.session.add(nuevo_grupo)
                 db.session.flush()
@@ -354,6 +356,7 @@ def register_routes(app):
             grupo.fecha_fin = datetime.datetime.strptime(request.form.get('fecha_fin'), '%Y-%m-%d').date()
             modalidad = request.form.get('modalidad')
             grupo.modalidad = modalidad
+            grupo.tipo_pago = request.form.get('tipo_pago', '20_turnos')
             estudiantes_seleccionados_ids = request.form.getlist('estudiantes')
 
             # --- CAMBIO: Se elimina el límite superior de 10 estudiantes ---

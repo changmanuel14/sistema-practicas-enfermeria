@@ -54,12 +54,21 @@ class Grupo(db.Model):
     modalidad = db.Column(db.String(10), nullable=False) # 'matutino' o 'vespertino'
     id_supervisor = db.Column(db.Integer, db.ForeignKey('supervisor.id'), nullable=False)
     id_ciclo = db.Column(db.Integer, db.ForeignKey('ciclo.id'), nullable=False)
+    tipo_pago = db.Column(db.String(20), nullable=False, default='20_turnos')
     estudiantes = db.relationship('Estudiante', secondary=estudiante_grupo, lazy='subquery',
         backref=db.backref('grupos', lazy=True))
     reportes = db.relationship('Reporte', backref='grupo', lazy=True, cascade="all, delete-orphan")
 
     def calcular_pago_total(self):
-        return len(self.estudiantes) * 400
+        if self.tipo_pago == '40_turnos':
+            tarifa_por_estudiante = 800.0
+        else: # Por defecto o si es '20_turnos'
+            tarifa_por_estudiante = 400.0
+        
+        # Aplica la lógica del máximo de 10 estudiantes para el cálculo
+        num_estudiantes_para_pago = min(len(self.estudiantes), 10)
+        
+        return num_estudiantes_para_pago * tarifa_por_estudiante
 
     def calcular_dias_habiles(self):
         # Cuenta los días de lunes a viernes entre las fechas
@@ -78,11 +87,7 @@ class Grupo(db.Model):
         - Considera un máximo de 10 estudiantes para el cálculo.
         - El pago por turno tiene un máximo de Q200.00.
         """
-        # --- CAMBIO CLAVE: Limitar el número de estudiantes para el cálculo a un máximo de 10 ---
-        # Si el grupo tiene 10 o menos estudiantes, usa ese número.
-        # Si tiene más de 10 (ej. 11, 12, 15), usa 10 para el cálculo.
-        num_estudiantes_para_pago = min(len(self.estudiantes), 10)
-        pago_total = num_estudiantes_para_pago * 400
+        pago_total = self.calcular_pago_total()
         # --- FIN DEL CAMBIO ---
 
         dias = self.calcular_dias_habiles()
