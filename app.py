@@ -16,7 +16,12 @@ from sqlalchemy.orm import joinedload
 def generar_pdf_grupos(grupos, titulo="Reporte de Grupos"):
     """Función auxiliar para generar un PDF con una lista de grupos."""
     buf = BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+    
+    # --- CAMBIO CLAVE: Usar landscape(A4) para poner la página acostada ---
+    # Esto da mucho más espacio horizontal para las tablas.
+    doc = SimpleDocTemplate(buf, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+    # --- FIN DEL CAMBIO ---
+    
     story = []
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='CustomTitle', fontSize=18, parent=styles['Heading1'], spaceAfter=30))
@@ -49,12 +54,13 @@ def generar_pdf_grupos(grupos, titulo="Reporte de Grupos"):
 
         # Listado de estudiantes
         story.append(Paragraph("Estudiantes Asignados:", styles['Heading2']))
-        # CAMBIO: Añadir columna para el estado académico
         data_estudiantes = [['Carnet', 'Nombre', 'Semestre', 'Sección', 'Estado Académico']]
         for est in grupo.estudiantes:
             data_estudiantes.append([est.carnet, est.nombre, est.semestre, est.seccion, est.estado_academico])
         
-        tabla_estudiantes = Table(data_estudiantes, hAlign='LEFT', colWidths=[1.2*inch, 3*inch, 1*inch, 1*inch, 1.5*inch])
+        # --- CAMBIO: Ajustar anchos de columna para aprovechar el espacio horizontal ---
+        # El ancho total es de ~11.7 pulgadas. Esta distribución es más equilibrada.
+        tabla_estudiantes = Table(data_estudiantes, hAlign='LEFT', colWidths=[1.0*inch, 4.5*inch, 1.0*inch, 1.0*inch, 2.0*inch])
         tabla_estudiantes.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -66,6 +72,7 @@ def generar_pdf_grupos(grupos, titulo="Reporte de Grupos"):
         ]))
         story.append(tabla_estudiantes)
         story.append(Spacer(1, 20))
+        
     doc.build(story)
     buf.seek(0)
     return buf
