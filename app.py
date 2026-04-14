@@ -8,6 +8,7 @@ import pandas as pd
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import letter, A4, landscape
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from io import BytesIO
@@ -19,7 +20,7 @@ def generar_pdf_grupos(grupos, titulo="Reporte de Grupos"):
     
     # --- CAMBIO CLAVE: Usar landscape(A4) para poner la página acostada ---
     # Esto da mucho más espacio horizontal para las tablas.
-    doc = SimpleDocTemplate(buf, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+    doc = SimpleDocTemplate(buf, pagesize=landscape(A4), rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
     # --- FIN DEL CAMBIO ---
     
     story = []
