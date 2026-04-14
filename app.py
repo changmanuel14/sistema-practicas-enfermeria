@@ -11,6 +11,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from io import BytesIO
+from sqlalchemy.orm import joinedload
 
 def generar_pdf_grupos(grupos, titulo="Reporte de Grupos"):
     """Función auxiliar para generar un PDF con una lista de grupos."""
@@ -309,7 +310,9 @@ def register_routes(app):
             
             return redirect(url_for('gestionar_grupos'))
 
-        all_grupos = Grupo.query.all()
+        # --- INICIO DEL BLOQUE MODIFICADO ---
+        # 1. Mejora la consulta para cargar los supervisores de una vez y evitar múltiples consultas a la BD
+        all_grupos = Grupo.query.options(joinedload(Grupo.supervisor)).all()
         grupos_activos = []
         hoy = datetime.date.today()
 
@@ -335,12 +338,20 @@ def register_routes(app):
                 if unregistered_dates:
                     grupos_activos.append(grupo)
 
-        # El resto del código GET no cambia, solo pasamos la lista filtrada
+        # 2. ORDENA LA LISTA DE GRUPOS ACTIVOS
+        # Ordena por: 1) Fecha de inicio (descendente), 2) Nombre del supervisor (ascendente), 3) Lugar (ascendente)
+        grupos_activos = sorted(
+            grupos_activos, 
+            key=lambda g: (-g.fecha_inicio.toordinal(), g.supervisor.nombre_completo(), g.lugar)
+        )
+        # --- FIN DEL BLOQUE MODIFICADO ---
+
+        # El resto del código GET no cambia, solo pasamos la lista filtrada y ya ordenada
         supervisores = Supervisor.query.order_by(Supervisor.nombre).all()
         ciclos = Ciclo.query.order_by(Ciclo.anio.desc()).all()
         estudiantes = Estudiante.query.order_by(Estudiante.nombre).all()
         return render_template('grupos/lista_grupos.html', 
-                            grupos=grupos_activos, # <-- Usamos la lista filtrada
+                            grupos=grupos_activos, 
                             supervisores=supervisores, 
                             ciclos=ciclos,
                             estudiantes=estudiantes)
