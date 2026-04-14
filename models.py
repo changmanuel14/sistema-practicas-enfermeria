@@ -56,7 +56,7 @@ class Grupo(db.Model):
     id_ciclo = db.Column(db.Integer, db.ForeignKey('ciclo.id'), nullable=False)
     tipo_pago = db.Column(db.String(20), nullable=False, default='20_turnos')
     estudiantes = db.relationship('Estudiante', secondary=estudiante_grupo, lazy='subquery',
-        backref=db.backref('grupos', lazy=True))
+                    order_by='Estudiante.nombre', backref=db.backref('grupos', lazy=True))
     reportes = db.relationship('Reporte', backref='grupo', lazy=True, cascade="all, delete-orphan")
 
     def calcular_pago_total(self):
