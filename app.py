@@ -15,13 +15,11 @@ from io import BytesIO
 from sqlalchemy.orm import joinedload
 
 def generar_pdf_grupos(grupos, titulo="Reporte de Grupos"):
-    """Función auxiliar para generar un PDF con una lista de grupos."""
+    """Función auxiliar para generar un PDF con una lista de grupos en formato horizontal."""
     buf = BytesIO()
     
     # --- CAMBIO CLAVE: Usar landscape(A4) para poner la página acostada ---
-    # Esto da mucho más espacio horizontal para las tablas.
     doc = SimpleDocTemplate(buf, pagesize=landscape(A4), rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
-    # --- FIN DEL CAMBIO ---
     
     story = []
     styles = getSampleStyleSheet()
@@ -55,13 +53,29 @@ def generar_pdf_grupos(grupos, titulo="Reporte de Grupos"):
 
         # Listado de estudiantes
         story.append(Paragraph("Estudiantes Asignados:", styles['Heading2']))
-        data_estudiantes = [['Carnet', 'Nombre', 'Semestre', 'Sección', 'Estado Académico']]
-        for est in grupo.estudiantes:
-            data_estudiantes.append([est.carnet, est.nombre, est.semestre, est.seccion, est.estado_academico])
         
-        # --- CAMBIO: Ajustar anchos de columna para aprovechar el espacio horizontal ---
-        # El ancho total es de ~11.7 pulgadas. Esta distribución es más equilibrada.
-        tabla_estudiantes = Table(data_estudiantes, hAlign='LEFT', colWidths=[1.0*inch, 4.5*inch, 1.0*inch, 1.0*inch, 2.0*inch])
+        # --- CAMBIO 1: Añadir la nueva columna "Estado de Pago" al encabezado ---
+        data_estudiantes = [['Carnet', 'Nombre', 'Semestre', 'Sección', 'Estado Académico', 'Estado de Pago']]
+        
+        for est in grupo.estudiantes:
+            # --- CAMBIO 2: Añadir la lógica para el estado de pago ---
+            estado_pago_texto = "Pendiente"
+            if est.fecha_pago:
+                # Si tiene fecha de pago, muestra "Pagado" y la fecha
+                estado_pago_texto = f"Pagado ({est.fecha_pago.strftime('%d/%m/%Y')})"
+
+            data_estudiantes.append([
+                est.carnet, 
+                est.nombre, 
+                est.semestre, 
+                est.seccion, 
+                est.estado_academico,
+                estado_pago_texto  # <-- Aquí se añade el nuevo dato
+            ])
+        
+        # --- CAMBIO 3: Ajustar los anchos de columna para la nueva columna ---
+        # Se redujo un poco el ancho de "Nombre" y "Estado Académico" para hacer espacio.
+        tabla_estudiantes = Table(data_estudiantes, hAlign='LEFT', colWidths=[0.9*inch, 3.8*inch, 1.0*inch, 1.0*inch, 1.6*inch, 1.4*inch])
         tabla_estudiantes.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
