@@ -342,7 +342,7 @@ def register_routes(app):
         # Ordena por: 1) Fecha de inicio (descendente), 2) Nombre del supervisor (ascendente), 3) Lugar (ascendente)
         grupos_activos = sorted(
             grupos_activos, 
-            key=lambda g: (-g.fecha_inicio.toordinal(), g.supervisor.nombre_completo(), g.lugar)
+            key=lambda g: (g.fecha_inicio.toordinal(), g.supervisor.nombre_completo(), g.lugar)
         )
         # --- FIN DEL BLOQUE MODIFICADO ---
 
