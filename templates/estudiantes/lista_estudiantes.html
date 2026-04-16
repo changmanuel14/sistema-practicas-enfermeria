@@ -44,7 +44,11 @@
                     {% endif %}
                 </td>
                 <td>
-                    <span class="badge-estado badge-{{ 'success' if est.estado_academico == 'Aprobado' else 'warning' }}">
+                    <span class="badge-estado badge-{{
+                        'success' if est.estado_academico == 'Aprobado'
+                        else 'danger' if est.estado_academico == 'Reprobó curso'
+                        else 'warning'
+                    }}">
                         {{ est.estado_academico }}
                     </span>
                 </td>
