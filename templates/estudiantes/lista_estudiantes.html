@@ -196,7 +196,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     const badge = document.querySelector(`#estudiante-${estudianteId} .badge-estado`);
                     if (badge) {
                         badge.textContent = nuevoEstado;
-                        badge.className = `badge-estado badge-${nuevoEstado === 'Aprobado' ? 'success' : 'warning'}`;
+                        badge.className = `badge-estado badge-${
+                            nuevoEstado === 'Aprobado'
+                                ? 'success'
+                                : nuevoEstado === 'Reprobó curso'
+                                    ? 'danger'
+                                    : 'warning'
+                        }`;
                     }
                 } else {
                     showClientFlash(data.message || 'Error al actualizar el estado.', 'danger');
