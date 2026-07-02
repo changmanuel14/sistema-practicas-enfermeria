@@ -64,6 +64,10 @@
 </div>
 
 <h2>Grupos Existentes</h2>
+
+<!-- Iterar sobre los grupos agrupados por ciclo -->
+{% for ciclo_nombre, grupos in grupos_por_ciclo.items() %}
+<h3>{{ ciclo_nombre }}</h3>
 <table>
     <thead>
         <tr>
@@ -77,18 +81,18 @@
         </tr>
     </thead>
     <tbody>
-        {% for g in grupos %}
+        {% for grupo in grupos %}
         <tr>
-            <td>{{ g.lugar }}</td>
-            <td>{{ g.supervisor.nombre_completo() }}</td>
-            <td>{{ g.fecha_inicio.strftime('%d/%m/%Y') }} - {{ g.fecha_fin.strftime('%d/%m/%Y') }}</td>
-            <td>{{ g.modalidad.capitalize() }}</td>
-            <td>{{ g.estudiantes|length }}</td>
-            <td>Q. {{ g.calcular_pago_por_turno() }}</td>
+            <td>{{ grupo.lugar }}</td>
+            <td>{{ grupo.supervisor.nombre_completo() }}</td>
+            <td>{{ grupo.fecha_inicio.strftime('%d/%m/%Y') }} - {{ grupo.fecha_fin.strftime('%d/%m/%Y') }}</td>
+            <td>{{ grupo.modalidad.capitalize() }}</td>
+            <td>{{ grupo.estudiantes|length }}</td>
+            <td>Q. {{ grupo.calcular_pago_por_turno() }}</td>
             <td class="actions-cell">
-                <a href="{{ url_for('ver_grupo', id=g.id) }}" class="button-action-small">Ver</a>
-                <a href="{{ url_for('editar_grupo', id=g.id) }}" class="button-action-small">Editar</a>
-                <form action="{{ url_for('eliminar_grupo', id=g.id) }}" method="POST" style="display:inline;">
+                <a href="{{ url_for('ver_grupo', id=grupo.id) }}" class="button-action-small">Ver</a>
+                <a href="{{ url_for('editar_grupo', id=grupo.id) }}" class="button-action-small">Editar</a>
+                <form action="{{ url_for('eliminar_grupo', id=grupo.id) }}" method="POST" style="display:inline;">
                     <button type="submit" class="button-action-small button-danger"
                         onclick="return confirm('¿Estás seguro de que quieres eliminar este grupo y todos sus reportes?');">Eliminar</button>
                 </form>
@@ -97,6 +101,9 @@
         {% endfor %}
     </tbody>
 </table>
+<hr>
+{% endfor %}
+
 {% endblock %}
 
 {% block scripts %}
@@ -163,7 +170,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="estudiantes-table-body">
-                        `;
+                            `;
                             estudiantes.forEach(est => {
                                 tableHtml += `
                                 <tr>
@@ -177,7 +184,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                        `;
+                            `;
                             estudiantesContainer.innerHTML = tableHtml;
 
                             // Lógica para "Seleccionar Todos"

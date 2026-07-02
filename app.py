@@ -335,48 +335,29 @@ def register_routes(app):
         # --- INICIO DEL BLOQUE MODIFICADO ---
         # 1. Mejora la consulta para cargar los supervisores de una vez y evitar múltiples consultas a la BD
         all_grupos = Grupo.query.options(joinedload(Grupo.supervisor)).all()
-        grupos_activos = []
-        hoy = datetime.date.today()
 
+    # Agrupar los grupos por ciclo
+        grupos_por_ciclo = {}
         for grupo in all_grupos:
-            # Si el grupo no ha finalizado, siempre se muestra
-            if grupo.fecha_fin >= hoy:
-                grupos_activos.append(grupo)
-            else:
-                # Si ya finalizó, calculamos las fechas pendientes
-                all_dates = set()
-                current_date = grupo.fecha_inicio
-                while current_date <= grupo.fecha_fin:
-                    if current_date.weekday() < 5:
-                        all_dates.add(current_date)
-                    current_date += datetime.timedelta(days=1)
-                
-                reportes_existentes = Reporte.query.filter_by(id_grupo=grupo.id).all()
-                registered_dates = {r.fecha_turno for r in reportes_existentes}
-                
-                unregistered_dates = all_dates - registered_dates
-                
-                # Si aún quedan fechas por procesar, el grupo se mantiene activo
-                if unregistered_dates:
-                    grupos_activos.append(grupo)
+            ciclo_nombre = grupo.ciclo.nombre
+            if ciclo_nombre not in grupos_por_ciclo:
+                grupos_por_ciclo[ciclo_nombre] = []
+            grupos_por_ciclo[ciclo_nombre].append(grupo)
 
-        # 2. ORDENA LA LISTA DE GRUPOS ACTIVOS
-        # Ordena por: 1) Fecha de inicio (descendente), 2) Nombre del supervisor (ascendente), 3) Lugar (ascendente)
-        grupos_activos = sorted(
-            grupos_activos, 
-            key=lambda g: (g.fecha_inicio.toordinal(), g.supervisor.nombre_completo(), g.lugar)
-        )
-        # --- FIN DEL BLOQUE MODIFICADO ---
+        # Ordenar los grupos dentro de cada ciclo
+        for ciclo in grupos_por_ciclo:
+            grupos_por_ciclo[ciclo] = sorted(
+                grupos_por_ciclo[ciclo],
+                key=lambda g: (g.fecha_inicio.toordinal(), g.supervisor.nombre_completo(), g.lugar)
+            )
 
-        # El resto del código GET no cambia, solo pasamos la lista filtrada y ya ordenada
+        # Obtener los datos para los formularios
         supervisores = Supervisor.query.order_by(Supervisor.nombre).all()
         ciclos = Ciclo.query.order_by(Ciclo.anio.desc()).all()
         estudiantes = Estudiante.query.order_by(Estudiante.nombre).all()
-        return render_template('grupos/lista_grupos.html', 
-                            grupos=grupos_activos, 
-                            supervisores=supervisores, 
-                            ciclos=ciclos,
-                            estudiantes=estudiantes)
+
+        # Renderizar la plantilla pasando los grupos agrupados por ciclo
+        return render_template('grupos/lista_grupos.html',grupos_por_ciclo=grupos_por_ciclo,supervisores=supervisores,ciclos=ciclos,estudiantes=estudiantes)
 
     # --- Módulo Extra: Buscador de Estudiantes ---
     @app.route('/buscar_estudiante', methods=['GET', 'POST'])
