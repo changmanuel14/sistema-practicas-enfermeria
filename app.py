@@ -742,6 +742,7 @@ def register_routes(app):
                 registered_dates = {r.fecha_turno for r in reportes_existentes}
                 unregistered_dates = all_dates - registered_dates
                 if unregistered_dates: grupos_activos.append(grupo)
+        grupos_activos.sort(key=lambda x: (x.fecha_inicio, x.lugar))
 
         buf = generar_pdf_grupos(grupos_activos, "Reporte General de Grupos")
         return send_file(buf, as_attachment=True, download_name='reporte_grupos_general.pdf', mimetype='application/pdf')
