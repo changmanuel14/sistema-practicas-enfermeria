@@ -473,8 +473,40 @@ def register_routes(app):
     @app.route('/reportes/registrar')
     def registrar_reportes():
         """Muestra el listado de grupos para elegir cuál registrar."""
-        grupos = Grupo.query.order_by(Grupo.lugar).all()
-        return render_template('reportes/lista_grupos_para_registro.html', grupos=grupos)
+        # Cargar todos los grupos con sus supervisores (optimizado)
+        all_grupos = Grupo.query.options(joinedload(Grupo.supervisor)).all()
+        
+        grupos_con_pendientes = []
+        hoy = datetime.date.today()
+        
+        for grupo in all_grupos:
+            # Calcular todas las fechas hábiles del grupo
+            all_dates = set()
+            current_date = grupo.fecha_inicio
+            while current_date <= grupo.fecha_fin:
+                if current_date.weekday() < 5:  # Solo lunes a viernes
+                    all_dates.add(current_date)
+                current_date += datetime.timedelta(days=1)
+            
+            # Obtener reportes existentes
+            reportes_existentes = Reporte.query.filter_by(id_grupo=grupo.id).all()
+            registered_dates = {r.fecha_turno for r in reportes_existentes}
+            
+            # Calcular fechas no registradas
+            unregistered_dates = all_dates - registered_dates
+            
+            # Solo incluir grupos que tengan fechas pendientes
+            if unregistered_dates:
+                grupos_con_pendientes.append(grupo)
+        
+        # Ordenar por supervisor (apellido, nombre) y luego por fecha de inicio
+        grupos_con_pendientes.sort(key=lambda g: (
+            g.supervisor.apellido.lower(),
+            g.supervisor.nombre.lower(),
+            g.fecha_inicio
+        ))
+        
+        return render_template('reportes/lista_grupos_para_registro.html', grupos=grupos_con_pendientes)
 
     @app.route('/reportes/registrar/<int:id_grupo>', methods=['GET', 'POST'])
     def registrar_turnos_grupo(id_grupo):
