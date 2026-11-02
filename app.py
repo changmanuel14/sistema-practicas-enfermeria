@@ -501,8 +501,8 @@ def register_routes(app):
         
         # Ordenar por supervisor (apellido, nombre) y luego por fecha de inicio
         grupos_con_pendientes.sort(key=lambda g: (
-            g.supervisor.apellido.lower(),
             g.supervisor.nombre.lower(),
+            g.supervisor.apellido.lower(),
             g.fecha_inicio
         ))
         
