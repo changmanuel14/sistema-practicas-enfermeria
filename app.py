@@ -589,7 +589,7 @@ def register_routes(app):
 
     @app.route('/reportes/pagos')
     def reporte_pagos():
-        supervisores = Supervisor.query.order_by(Supervisor.apellido).all()
+        supervisores = Supervisor.query.order_by(Supervisor.nombre).all()
         datos_reporte = []
         
         for sup in supervisores:
